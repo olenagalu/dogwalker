@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: princess-dog-walker
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/PawsAndPaths.Api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ApplyMigrationsOnStartup
+        value: "true"
+      - key: Jwt__Key
+        generateValue: true
+      - key: Owner__Email
+        sync: false
+      - key: Owner__Password
+        sync: false
+      - key: Google__ClientId
+        sync: false
+      - key: DB_HOST
+        fromDatabase:
+          name: princess-dog-walker-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: princess-dog-walker-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: princess-dog-walker-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: princess-dog-walker-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: princess-dog-walker-db
+          property: password
+
+databases:
+  - name: princess-dog-walker-db
+    plan: free
+    databaseName: princessdogwalker
+    user: princessdogwalker
+    postgresMajorVersion: "17"
+    ipAllowList: []

@@ -1,0 +1,19 @@
+@host = http://localhost:5095
+
+GET {{host}}/health
+
+### Public services
+GET {{host}}/api/services
+
+### Register a customer
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Sam Taylor",
+  "email": "sam@example.com",
+  "phone": "561-555-0100",
+  "password": "Walking123"
+}
+
+### Add `Authorization: Bearer <token>` for protected calls.
