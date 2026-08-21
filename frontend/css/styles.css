@@ -201,6 +201,10 @@ textarea { min-height: 105px; resize: vertical; }
 .tab.active { color: white; background: var(--forest); }
 .auth-panel { display: grid; gap: 1rem; }
 .auth-panel[hidden] { display: none; }
+.password-input { position: relative; }
+.password-input input { padding-right: 4.5rem; }
+.password-toggle { position: absolute; top: 50%; right: .7rem; transform: translateY(-50%); border: 0; padding: .35rem .5rem; color: var(--forest); background: transparent; font-size: .78rem; font-weight: 800; cursor: pointer; }
+.password-toggle:hover, .password-toggle:focus-visible { color: #a8325d; text-decoration: underline; text-underline-offset: 3px; }
 .auth-divider { display: flex; align-items: center; gap: 1rem; margin: 1.25rem 0; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
 .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 #google-signin { display: flex; justify-content: center; min-height: 44px; }

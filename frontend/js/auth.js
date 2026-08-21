@@ -1,6 +1,32 @@
 const panels = ['login', 'register', 'forgot', 'reset'];
 const statusBox = document.querySelector('#auth-status');
+initializePasswordToggles();
 initializeGoogleSignIn();
+
+function initializePasswordToggles() {
+  document.querySelectorAll('input[type="password"]').forEach(input => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'password-input';
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.append(input);
+
+    const toggle = document.createElement('button');
+    toggle.className = 'password-toggle';
+    toggle.type = 'button';
+    toggle.textContent = 'Show';
+    toggle.setAttribute('aria-label', 'Show password');
+    toggle.setAttribute('aria-controls', input.id);
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.addEventListener('click', () => {
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      toggle.textContent = showing ? 'Show' : 'Hide';
+      toggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+      toggle.setAttribute('aria-pressed', String(!showing));
+    });
+    wrapper.append(toggle);
+  });
+}
 
 async function initializeGoogleSignIn() {
   try {
