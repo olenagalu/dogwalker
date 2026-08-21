@@ -18,7 +18,12 @@ public class ServicesController(AppDbContext db) : ControllerBase
         var canSeeInactive = includeInactive && User.IsInRole(AppRoles.Owner);
         var query = db.Services.AsNoTracking().AsQueryable();
         if (!canSeeInactive) query = query.Where(service => service.IsActive);
-        return Ok((await query.OrderBy(service => service.Id).ToListAsync(cancellationToken)).Select(service => service.ToDto()));
+        return Ok((await query
+            .OrderBy(service => service.Price)
+            .ThenBy(service => service.DurationMinutes)
+            .ThenBy(service => service.Name)
+            .ToListAsync(cancellationToken))
+            .Select(service => service.ToDto()));
     }
 
     [HttpPost, Authorize(Roles = AppRoles.Owner)]
@@ -28,7 +33,7 @@ public class ServicesController(AppDbContext db) : ControllerBase
         Apply(service, request);
         db.Services.Add(service);
         await db.SaveChangesAsync(cancellationToken);
-        return CreatedAtAction(nameof(GetAll), new { id = service.Id }, service.ToDto());
+        return Created("/api/services", service.ToDto());
     }
 
     [HttpPut("{id:int}"), Authorize(Roles = AppRoles.Owner)]
