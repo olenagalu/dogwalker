@@ -216,6 +216,9 @@ textarea { min-height: 105px; resize: vertical; }
 .calendar-month:disabled { opacity: .45; cursor: not-allowed; }
 .booking-help { margin-top: 1.25rem; padding: 1.2rem 1.35rem; color: var(--muted); background: #fff0f6; border-radius: 16px; }
 .booking-help a { color: var(--forest); font-weight: 700; }
+.overnight-default-note, .overnight-schedule-fields { padding: 1rem; background: #fff0f6; border-radius: 14px; }
+.overnight-default-note span { color: var(--muted); font-size: .84rem; }
+.field[hidden], .overnight-default-note[hidden], .overnight-schedule-fields[hidden], .panel-form[hidden] { display: none !important; }
 .contact-card .footer-links { gap: 1.25rem; }
 .contact-card a { color: var(--forest); }
 .link-button { border: 0; padding: .5rem .2rem; color: var(--forest); background: transparent; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }

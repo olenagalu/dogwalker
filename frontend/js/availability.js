@@ -4,13 +4,21 @@ const dateInput = document.querySelector('#availability-date');
 const slotList = document.querySelector('#slot-list');
 const periodHeading = document.querySelector('#calendar-period');
 const today = new Date();
+let services = [];
 const localToday = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 dateInput.min = localToday; dateInput.value = localToday;
 
-PrincessApi.request('/api/services').then(services => services.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}`, service.id))));
+PrincessApi.request('/api/services').then(items => { services = items; items.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}`, service.id))); });
 document.querySelector('#availability-form').addEventListener('submit', async event => {
   event.preventDefault();
   if (!event.currentTarget.reportValidity()) return;
+  const service = services.find(item => String(item.id) === serviceSelect.value);
+  if (service?.isOvernightStay) {
+    periodHeading.textContent = 'Overnight stay'; slotList.replaceChildren();
+    const link = document.createElement('a'); link.className = 'button button-clay';
+    link.href = `book.html?serviceId=${service.id}&date=${dateInput.value}`; link.textContent = 'Choose overnight dates';
+    slotList.append(link); return;
+  }
   if (viewSelect.value === 'year') return renderYear();
   const range = getRange(viewSelect.value, dateInput.value);
   slotList.innerHTML = '<div class="empty-state">Checking the calendar…</div>';

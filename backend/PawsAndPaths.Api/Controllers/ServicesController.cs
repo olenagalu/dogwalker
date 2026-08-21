@@ -65,5 +65,6 @@ public class ServicesController(AppDbContext db) : ControllerBase
         service.DurationMinutes = request.DurationMinutes;
         service.Price = request.Price;
         service.IsActive = request.IsActive;
+        service.IsOvernightStay = request.IsOvernightStay;
     }
 }

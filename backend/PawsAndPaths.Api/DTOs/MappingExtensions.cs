@@ -10,7 +10,7 @@ public static class MappingExtensions
 
     public static ServiceDto ToDto(this ServiceOffering service) => new(
         service.Id, service.Name, service.Description,
-        service.DurationMinutes, service.Price, service.IsActive);
+        service.DurationMinutes, service.Price, service.IsActive, service.IsOvernightStay);
 
     public static AvailabilityDto ToDto(this AvailabilityRule rule) => new(
         rule.Id, rule.DayOfWeek, rule.SpecificDate, rule.StartTime,
@@ -21,5 +21,7 @@ public static class MappingExtensions
         booking.DogId, booking.Dog.Name, booking.ServiceOfferingId,
         booking.ServiceOffering.Name, booking.Date, booking.StartTime,
         booking.EndTime, booking.Price, booking.SpecialInstructions,
-        booking.Status, booking.CreatedAt);
+        booking.Status, booking.CreatedAt, booking.EndDate, booking.IsOvernightStay,
+        booking.OvernightStartTime, booking.OvernightEndTime,
+        booking.MiddayStartTime, booking.MiddayEndTime);
 }

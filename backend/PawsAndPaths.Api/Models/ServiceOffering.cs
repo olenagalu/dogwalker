@@ -11,5 +11,6 @@ public class ServiceOffering
     [Range(5, 1440)] public int DurationMinutes { get; set; }
     [Column(TypeName = "numeric(10,2)")] public decimal Price { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsOvernightStay { get; set; }
     public ICollection<Booking> Bookings { get; set; } = [];
 }

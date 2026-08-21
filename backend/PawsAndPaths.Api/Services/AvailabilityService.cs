@@ -24,12 +24,14 @@ public class AvailabilityService(AppDbContext db) : IAvailabilityService
         var blocked = await RulesForDate(date).Where(rule => !rule.IsAvailable).ToListAsync(cancellationToken);
         if (blocked.Any(rule => Overlaps(start, end, rule.StartTime, rule.EndTime))) return false;
 
-        return !await db.Bookings.AnyAsync(booking =>
-            booking.Date == date
-            && booking.Id != excludeBookingId
-            && (booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.Confirmed)
-            && start < booking.EndTime && end > booking.StartTime,
-            cancellationToken);
+        var bookings = await db.Bookings.AsNoTracking()
+            .Where(booking => booking.Id != excludeBookingId
+                && (booking.Status == BookingStatus.Pending || booking.Status == BookingStatus.Confirmed)
+                && ((!booking.IsOvernightStay && booking.Date == date)
+                    || (booking.IsOvernightStay && booking.Date <= date && booking.EndDate >= date)))
+            .ToListAsync(cancellationToken);
+        return !bookings.SelectMany(BookingSchedule.Windows)
+            .Any(window => window.Date == date && Overlaps(start, end, window.StartTime, window.EndTime));
     }
 
     public async Task<IReadOnlyList<AvailableSlotDto>> GetSlotsAsync(

@@ -3,6 +3,7 @@ const form = document.querySelector('#booking-form');
 const serviceSelect = document.querySelector('#book-service');
 const dogSelect = document.querySelector('#book-dog');
 const dateInput = document.querySelector('#book-date');
+const endDateInput = document.querySelector('#book-end-date');
 const timeSelect = document.querySelector('#book-time');
 const statusBox = document.querySelector('#booking-status');
 const review = document.querySelector('#booking-review');
@@ -10,6 +11,7 @@ let services = []; let dogs = []; let draft = null;
 const query = new URLSearchParams(location.search);
 const now = new Date(); const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 dateInput.min = today; dateInput.value = query.get('date') || today;
+endDateInput.min = today;
 
 if (bookingUser) Promise.all([PrincessApi.request('/api/services'), PrincessApi.request('/api/dogs')]).then(([serviceData, dogData]) => {
   services = serviceData; dogs = dogData;
@@ -20,9 +22,12 @@ if (bookingUser) Promise.all([PrincessApi.request('/api/services'), PrincessApi.
   if (serviceSelect.value) loadSlots(query.get('time'));
 }).catch(error => feedback(error.message, 'error'));
 
-serviceSelect.addEventListener('change', () => loadSlots());
-dateInput.addEventListener('change', () => loadSlots());
+serviceSelect.addEventListener('change', () => { toggleOvernight(); loadSlots(); });
+dateInput.addEventListener('change', () => { endDateInput.min = dateInput.value; loadSlots(); });
+function selectedService(){return services.find(item=>String(item.id)===serviceSelect.value);}
+function toggleOvernight(){const overnight=Boolean(selectedService()?.isOvernightStay);document.querySelector('#book-end-field').hidden=!overnight;document.querySelector('#overnight-default-note').hidden=!overnight;endDateInput.required=overnight;timeSelect.required=!overnight;timeSelect.disabled=overnight;if(overnight){timeSelect.innerHTML='<option value="">Uses the overnight care schedule</option>';if(!endDateInput.value){const next=new Date(`${dateInput.value}T00:00:00`);next.setDate(next.getDate()+1);endDateInput.value=`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}-${String(next.getDate()).padStart(2,'0')}`;}}}
 async function loadSlots(preferred) {
+  if (selectedService()?.isOvernightStay) return toggleOvernight();
   timeSelect.disabled = true; timeSelect.innerHTML = '<option value="">Checking open times…</option>';
   if (!serviceSelect.value || !dateInput.value) return;
   try {
@@ -39,7 +44,9 @@ form.addEventListener('submit', event => {
   event.preventDefault(); if (!form.reportValidity()) return;
   draft = Object.fromEntries(new FormData(form));
   const service = services.find(item => String(item.id) === draft.serviceId); const dog = dogs.find(item => String(item.id) === draft.dogId);
-  document.querySelector('#review-details').innerHTML = `<div><dt>Dog</dt><dd>${escapeText(dog.name)}</dd></div><div><dt>Service</dt><dd>${escapeText(service.name)}</dd></div><div><dt>When</dt><dd>${escapeText(formatDate(draft.date))} at ${escapeText(formatTime(draft.startTime))}</dd></div><div><dt>Price</dt><dd>$${Number(service.price).toFixed(2)}</dd></div><div><dt>Instructions</dt><dd>${escapeText(draft.specialInstructions || 'None')}</dd></div>`;
+  if(service.isOvernightStay)draft.startTime='22:00';
+  const when=service.isOvernightStay?`${formatDate(draft.date)}–${formatDate(draft.endDate)}<br><small>10 PM–9 AM overnight · 2–3 PM midday</small>`:`${formatDate(draft.date)} at ${formatTime(draft.startTime)}`;
+  document.querySelector('#review-details').innerHTML = `<div><dt>Dog</dt><dd>${escapeText(dog.name)}</dd></div><div><dt>Service</dt><dd>${escapeText(service.name)}</dd></div><div><dt>When</dt><dd>${when}</dd></div><div><dt>Price</dt><dd>$${Number(service.price).toFixed(2)}</dd></div><div><dt>Instructions</dt><dd>${escapeText(draft.specialInstructions || 'None')}</dd></div>`;
   form.hidden = true; review.hidden = false; review.scrollIntoView({ behavior:'smooth', block:'start' });
 });
 document.querySelector('#edit-booking').addEventListener('click', () => { review.hidden = true; form.hidden = false; });

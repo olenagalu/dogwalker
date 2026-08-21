@@ -47,12 +47,24 @@ public class BookingsController(AppDbContext db, IBookingService bookingService)
     {
         var bookingRequest = new CreateBookingDto(
             request.DogId, request.ServiceId, request.Date,
-            request.StartTime, request.SpecialInstructions);
+            request.StartTime, request.SpecialInstructions, request.EndDate,
+            request.OvernightStartTime, request.OvernightEndTime,
+            request.MiddayStartTime, request.MiddayEndTime);
         var (booking, error) = await bookingService.CreateAsync(
             request.CustomerId, bookingRequest, cancellationToken, BookingStatus.Confirmed);
         if (booking is null) return Conflict(new { message = error });
         var complete = await Query().SingleAsync(item => item.Id == booking.Id, cancellationToken);
         return CreatedAtAction(nameof(GetAll), new { id = booking.Id }, complete.ToDto());
+    }
+
+    [HttpPut("{id:int}/overnight-schedule"), Authorize(Roles = AppRoles.Owner)]
+    public async Task<ActionResult<BookingDto>> UpdateOvernightSchedule(
+        int id, UpdateOvernightScheduleDto request, CancellationToken cancellationToken)
+    {
+        var (booking, error) = await bookingService.UpdateOvernightScheduleAsync(id, request, cancellationToken);
+        if (booking is null) return Conflict(new { message = error });
+        var complete = await Query().SingleAsync(item => item.Id == booking.Id, cancellationToken);
+        return Ok(complete.ToDto());
     }
 
     [HttpPut("{id:int}/status"), Authorize(Roles = AppRoles.Owner)]

@@ -102,6 +102,50 @@ public class BookingServiceTests
         Assert.Equal(BookingStatus.Confirmed, booking.Status);
     }
 
+    [Fact]
+    public async Task OvernightSchedule_ShowsThreeCareWindowsOnMiddleDays()
+    {
+        var start = DateOnly.FromDateTime(DateTime.Today.AddDays(7));
+        var booking = new Booking
+        {
+            UserId = "user", DogId = 1, ServiceOfferingId = 1,
+            Date = start, EndDate = start.AddDays(2), IsOvernightStay = true,
+            StartTime = new TimeOnly(22, 0), EndTime = new TimeOnly(9, 0),
+            OvernightStartTime = new TimeOnly(22, 0), OvernightEndTime = new TimeOnly(9, 0),
+            MiddayStartTime = new TimeOnly(14, 0), MiddayEndTime = new TimeOnly(15, 0)
+        };
+
+        var middle = BookingSchedule.Windows(booking).Where(window => window.Date == start.AddDays(1)).ToList();
+
+        Assert.Equal(3, middle.Count);
+        Assert.Equal(new TimeOnly(9, 0), middle[0].EndTime);
+        Assert.Equal(new TimeOnly(14, 0), middle[1].StartTime);
+        Assert.Equal(new TimeOnly(22, 0), middle[2].StartTime);
+    }
+
+    [Fact]
+    public async Task OvernightMiddayVisit_BlocksRegularBookingSlot()
+    {
+        await using var db = CreateDatabase();
+        var (user, dog, service, date) = await Seed(db);
+        db.Bookings.Add(new Booking
+        {
+            UserId = user.Id, User = user, DogId = dog.Id, Dog = dog,
+            ServiceOfferingId = service.Id, ServiceOffering = service,
+            Date = date, EndDate = date.AddDays(2), IsOvernightStay = true,
+            StartTime = new TimeOnly(22, 0), EndTime = new TimeOnly(9, 0),
+            OvernightStartTime = new TimeOnly(22, 0), OvernightEndTime = new TimeOnly(9, 0),
+            MiddayStartTime = new TimeOnly(14, 0), MiddayEndTime = new TimeOnly(15, 0),
+            Price = 100m, Status = BookingStatus.Confirmed
+        });
+        await db.SaveChangesAsync();
+
+        var available = await new AvailabilityService(db).IsAvailableAsync(
+            date.AddDays(1), new TimeOnly(14, 0), new TimeOnly(14, 30), null, CancellationToken.None);
+
+        Assert.False(available);
+    }
+
     private static AppDbContext CreateDatabase() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 

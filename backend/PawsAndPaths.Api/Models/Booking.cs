@@ -13,8 +13,14 @@ public class Booking
     public int ServiceOfferingId { get; set; }
     public ServiceOffering ServiceOffering { get; set; } = null!;
     public DateOnly Date { get; set; }
+    public DateOnly? EndDate { get; set; }
     public TimeOnly StartTime { get; set; }
     public TimeOnly EndTime { get; set; }
+    public bool IsOvernightStay { get; set; }
+    public TimeOnly? OvernightStartTime { get; set; }
+    public TimeOnly? OvernightEndTime { get; set; }
+    public TimeOnly? MiddayStartTime { get; set; }
+    public TimeOnly? MiddayEndTime { get; set; }
     [Column(TypeName = "numeric(10,2)")] public decimal Price { get; set; }
     [MaxLength(2000)] public string SpecialInstructions { get; set; } = string.Empty;
     public BookingStatus Status { get; set; } = BookingStatus.Pending;
