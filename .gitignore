@@ -1,6 +1,7 @@
 .env
 **/bin/
 **/obj/
+**/bin\\Debug/
 .DS_Store
 *.user
 *.suo
