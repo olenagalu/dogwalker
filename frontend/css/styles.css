@@ -181,6 +181,19 @@ textarea { min-height: 105px; resize: vertical; }
 .slot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
 .slot { padding: 1rem; text-align: center; color: var(--forest); background: var(--paper); border: 1px solid var(--line); border-radius: 12px; text-decoration: none; font-weight: 700; }
 .slot:hover { color: white; background: var(--forest); }
+.calendar-heading { margin-bottom: 1.25rem; }
+.calendar-heading h2 { margin-top: .25rem; }
+.calendar-day { margin-bottom: 1.75rem; padding: 1.4rem; background: rgba(255,255,255,.62); border: 1px solid var(--line); border-radius: 20px; }
+.calendar-day h3 { margin-bottom: 1rem; }
+.year-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.calendar-month { display: grid; gap: .35rem; min-height: 115px; padding: 1.2rem; text-align: left; color: var(--forest); background: var(--paper); border: 1px solid var(--line); border-radius: 18px; cursor: pointer; }
+.calendar-month strong { font-family: 'Fraunces', serif; font-size: 1.25rem; }
+.calendar-month span { color: var(--muted); font-size: .8rem; }
+.calendar-month:hover { color: white; background: var(--forest); }
+.calendar-month:hover span { color: white; }
+.calendar-month:disabled { opacity: .45; cursor: not-allowed; }
+.booking-help { margin-top: 1.25rem; padding: 1.2rem 1.35rem; color: var(--muted); background: #fff0f6; border-radius: 16px; }
+.booking-help a { color: var(--forest); font-weight: 700; }
 .contact-card .footer-links { gap: 1.25rem; }
 .contact-card a { color: var(--forest); }
 .link-button { border: 0; padding: .5rem .2rem; color: var(--forest); background: transparent; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -277,6 +290,7 @@ textarea { min-height: 105px; resize: vertical; }
   .service-price { grid-column: 2; }
   .portrait-placeholder { min-height: 450px; }
   .slot-grid { grid-template-columns: 1fr 1fr; }
+  .year-grid { grid-template-columns: 1fr 1fr; }
   .review-card dl { grid-template-columns: 1fr; }
   .dashboard-nav { display: flex; overflow-x: auto; }
   .dashboard-nav a { white-space: nowrap; }
