@@ -41,6 +41,20 @@ public class BookingsController(AppDbContext db, IBookingService bookingService)
         return CreatedAtAction(nameof(GetMine), new { id = booking.Id }, complete.ToDto());
     }
 
+    [HttpPost("admin"), Authorize(Roles = AppRoles.Owner)]
+    public async Task<ActionResult<BookingDto>> CreateForCustomer(
+        CreateOwnerBookingDto request, CancellationToken cancellationToken)
+    {
+        var bookingRequest = new CreateBookingDto(
+            request.DogId, request.ServiceId, request.Date,
+            request.StartTime, request.SpecialInstructions);
+        var (booking, error) = await bookingService.CreateAsync(
+            request.CustomerId, bookingRequest, cancellationToken, BookingStatus.Confirmed);
+        if (booking is null) return Conflict(new { message = error });
+        var complete = await Query().SingleAsync(item => item.Id == booking.Id, cancellationToken);
+        return CreatedAtAction(nameof(GetAll), new { id = booking.Id }, complete.ToDto());
+    }
+
     [HttpPut("{id:int}/status"), Authorize(Roles = AppRoles.Owner)]
     public async Task<ActionResult<BookingDto>> ChangeStatus(
         int id, UpdateBookingStatusDto request, CancellationToken cancellationToken)

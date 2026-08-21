@@ -8,14 +8,17 @@ namespace PawsAndPaths.Api.Services;
 
 public interface IBookingService
 {
-    Task<(Booking? Booking, string? Error)> CreateAsync(string userId, CreateBookingDto request, CancellationToken cancellationToken);
+    Task<(Booking? Booking, string? Error)> CreateAsync(
+        string userId, CreateBookingDto request, CancellationToken cancellationToken,
+        BookingStatus initialStatus = BookingStatus.Pending);
     Task<(Booking? Booking, string? Error)> ChangeStatusAsync(int bookingId, BookingStatus status, CancellationToken cancellationToken);
 }
 
 public class BookingService(AppDbContext db, IAvailabilityService availability) : IBookingService
 {
     public async Task<(Booking? Booking, string? Error)> CreateAsync(
-        string userId, CreateBookingDto request, CancellationToken cancellationToken)
+        string userId, CreateBookingDto request, CancellationToken cancellationToken,
+        BookingStatus initialStatus = BookingStatus.Pending)
     {
         await using var transaction = db.Database.IsRelational()
             ? await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
@@ -41,7 +44,8 @@ public class BookingService(AppDbContext db, IAvailabilityService availability) 
             StartTime = request.StartTime,
             EndTime = end,
             Price = service.Price,
-            SpecialInstructions = request.SpecialInstructions?.Trim() ?? string.Empty
+            SpecialInstructions = request.SpecialInstructions?.Trim() ?? string.Empty,
+            Status = initialStatus
         };
         db.Bookings.Add(booking);
         await db.SaveChangesAsync(cancellationToken);

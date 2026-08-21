@@ -10,6 +10,14 @@ public record CreateBookingDto(
     TimeOnly StartTime,
     [MaxLength(2000)] string? SpecialInstructions);
 
+public record CreateOwnerBookingDto(
+    [Required] string CustomerId,
+    [Range(1, int.MaxValue)] int DogId,
+    [Range(1, int.MaxValue)] int ServiceId,
+    DateOnly Date,
+    TimeOnly StartTime,
+    [MaxLength(2000)] string? SpecialInstructions);
+
 public record UpdateBookingStatusDto(BookingStatus Status);
 
 public record BookingDto(

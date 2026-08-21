@@ -168,6 +168,28 @@ textarea { min-height: 105px; resize: vertical; }
 .appointment-date { font-family: 'Fraunces', serif; font-size: 1.35rem; }
 .appointment-meta { color: var(--muted); }
 .appointment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.owner-booking-tools { display: grid; grid-template-columns: minmax(280px,.75fr) minmax(0,1.6fr); gap: 1.5rem; align-items: start; margin-bottom: 2.25rem; }
+.owner-calendar-panel { min-width: 0; padding: 1.4rem; background: var(--paper); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+.owner-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.owner-calendar-toolbar h3 { margin: 0; text-align: center; }
+.calendar-nav-button { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; color: var(--forest); background: white; font-size: 1.15rem; cursor: pointer; }
+.booking-legend { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin-bottom: 1rem; }
+.legend-item { display: inline-flex; align-items: center; gap: .4rem; color: var(--muted); font-size: .75rem; font-weight: 700; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--booking-color); }
+.owner-month-calendar { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.calendar-weekday { padding: .55rem .25rem; text-align: center; color: var(--muted); background: #fff0f6; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+.owner-calendar-day { min-width: 0; min-height: 105px; padding: .45rem; background: white; border-top: 1px solid var(--line); border-right: 1px solid var(--line); }
+.owner-calendar-day:nth-child(7n) { border-right: 0; }
+.owner-calendar-day.is-empty { background: #fffafd; }
+.calendar-day-number { display: block; margin-bottom: .35rem; color: var(--muted); font-size: .72rem; font-weight: 800; }
+.owner-calendar-event { display: block; width: 100%; margin-bottom: .3rem; padding: .35rem .4rem; overflow: hidden; color: #472238; background: color-mix(in srgb, var(--booking-color) 24%, white); border-left: 4px solid var(--booking-color); border-radius: 6px; font-size: .66rem; font-weight: 700; line-height: 1.25; text-overflow: ellipsis; }
+.owner-list-heading { margin: 0 0 1rem; }
+.booking-color-0 { --booking-color: #e75480; }
+.booking-color-1 { --booking-color: #8b5cf6; }
+.booking-color-2 { --booking-color: #2aa198; }
+.booking-color-3 { --booking-color: #f59e0b; }
+.booking-color-4 { --booking-color: #3b82f6; }
+.booking-color-5 { --booking-color: #d946ef; }
 .detail-block { padding: 1rem; background: var(--cream); border-radius: 12px; }
 .detail-block strong { display: block; margin-bottom: .3rem; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; }
 .care-alert { grid-column: 1 / -1; background: #fff0f6; }
@@ -263,6 +285,7 @@ textarea { min-height: 105px; resize: vertical; }
   .schedule-shell, .contact-grid, .profile-grid, .auth-shell { grid-template-columns: 1fr; }
   .filter-card { position: static; }
   .dashboard-layout { grid-template-columns: 1fr; }
+  .owner-booking-tools { grid-template-columns: 1fr; }
   .dashboard-nav { position: static; grid-template-columns: repeat(4, 1fr); }
 }
 
@@ -294,6 +317,8 @@ textarea { min-height: 105px; resize: vertical; }
   .review-card dl { grid-template-columns: 1fr; }
   .dashboard-nav { display: flex; overflow-x: auto; }
   .dashboard-nav a { white-space: nowrap; }
+  .owner-calendar-panel { padding: .75rem; overflow-x: auto; }
+  .owner-month-calendar { min-width: 680px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

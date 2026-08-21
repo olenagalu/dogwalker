@@ -86,6 +86,22 @@ public class BookingServiceTests
         Assert.Equal("That time is no longer available.", error);
     }
 
+    [Fact]
+    public async Task OwnerCreatedBooking_CanStartConfirmed()
+    {
+        await using var db = CreateDatabase();
+        var (user, dog, service, date) = await Seed(db);
+        var bookingService = new BookingService(db, new AvailabilityService(db));
+
+        var (booking, error) = await bookingService.CreateAsync(user.Id,
+            new CreateBookingDto(dog.Id, service.Id, date, new TimeOnly(18, 0), "Booked by Julia."),
+            CancellationToken.None, BookingStatus.Confirmed);
+
+        Assert.Null(error);
+        Assert.NotNull(booking);
+        Assert.Equal(BookingStatus.Confirmed, booking.Status);
+    }
+
     private static AppDbContext CreateDatabase() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
