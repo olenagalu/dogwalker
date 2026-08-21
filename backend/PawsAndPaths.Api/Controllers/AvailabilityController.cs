@@ -19,7 +19,8 @@ public class AvailabilityController(AppDbContext db, IAvailabilityService availa
 
     [HttpGet, Authorize(Roles = AppRoles.Owner)]
     public async Task<ActionResult<IReadOnlyList<AvailabilityDto>>> GetRules(CancellationToken cancellationToken) =>
-        Ok((await db.Availability.AsNoTracking().OrderBy(rule => rule.SpecificDate).ThenBy(rule => rule.DayOfWeek)
+        Ok((await db.Availability.AsNoTracking().Where(rule => !rule.IsAvailable)
+            .OrderBy(rule => rule.SpecificDate).ThenBy(rule => rule.DayOfWeek)
             .ThenBy(rule => rule.StartTime).ToListAsync(cancellationToken)).Select(rule => rule.ToDto()));
 
     [HttpPost, Authorize(Roles = AppRoles.Owner)]
@@ -69,7 +70,9 @@ public class AvailabilityController(AppDbContext db, IAvailabilityService availa
         rule.SpecificDate = request.SpecificDate;
         rule.StartTime = request.StartTime;
         rule.EndTime = request.EndTime;
-        rule.IsAvailable = request.IsAvailable;
+        // The business is available 24/7 by default, so persisted rules are
+        // owner-created exceptions that mark time as unavailable.
+        rule.IsAvailable = false;
         rule.Notes = request.Notes?.Trim() ?? string.Empty;
     }
 }

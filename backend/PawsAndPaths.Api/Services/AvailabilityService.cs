@@ -19,14 +19,10 @@ public class AvailabilityService(AppDbContext db) : IAvailabilityService
     {
         if (end <= start || date < DateOnly.FromDateTime(DateTime.Today)) return false;
 
-        var rules = await RulesForDate(date).ToListAsync(cancellationToken);
-        var specificAvailable = rules.Where(rule => rule.SpecificDate == date && rule.IsAvailable).ToList();
-        var available = specificAvailable.Count > 0
-            ? specificAvailable
-            : rules.Where(rule => rule.SpecificDate is null && rule.IsAvailable).ToList();
-
-        if (!available.Any(rule => start >= rule.StartTime && end <= rule.EndTime)) return false;
-        if (rules.Any(rule => !rule.IsAvailable && Overlaps(start, end, rule.StartTime, rule.EndTime))) return false;
+        // Princess Dog Walker is open around the clock by default. Availability
+        // rules are therefore exceptions: an owner-created block removes time.
+        var blocked = await RulesForDate(date).Where(rule => !rule.IsAvailable).ToListAsync(cancellationToken);
+        if (blocked.Any(rule => Overlaps(start, end, rule.StartTime, rule.EndTime))) return false;
 
         return !await db.Bookings.AnyAsync(booking =>
             booking.Date == date
@@ -47,17 +43,15 @@ public class AvailabilityService(AppDbContext db) : IAvailabilityService
         var slots = new List<AvailableSlotDto>();
         for (var date = from; date <= to; date = date.AddDays(1))
         {
-            var rules = await RulesForDate(date).AsNoTracking().ToListAsync(cancellationToken);
-            var specific = rules.Where(rule => rule.SpecificDate == date && rule.IsAvailable).ToList();
-            var available = specific.Count > 0 ? specific : rules.Where(rule => rule.SpecificDate is null && rule.IsAvailable).ToList();
-            foreach (var rule in available)
+            // Generate half-hour starts throughout the day. Appointments that
+            // would cross midnight are offered on the following date instead.
+            for (var startMinutes = 0; startMinutes + service.DurationMinutes < 24 * 60; startMinutes += 30)
             {
-                for (var start = rule.StartTime; start.AddMinutes(service.DurationMinutes) <= rule.EndTime; start = start.AddMinutes(30))
-                {
-                    var end = start.AddMinutes(service.DurationMinutes);
-                    if (await IsAvailableAsync(date, start, end, null, cancellationToken))
-                        slots.Add(new AvailableSlotDto(date, start, end));
-                }
+                var start = new TimeOnly(startMinutes / 60, startMinutes % 60);
+                var endMinutes = startMinutes + service.DurationMinutes;
+                var end = new TimeOnly(endMinutes / 60, endMinutes % 60);
+                if (await IsAvailableAsync(date, start, end, null, cancellationToken))
+                    slots.Add(new AvailableSlotDto(date, start, end));
             }
         }
         return slots.Distinct().OrderBy(slot => slot.Date).ThenBy(slot => slot.StartTime).ToList();

@@ -48,6 +48,44 @@ public class BookingServiceTests
         Assert.Single(await db.Bookings.ToListAsync());
     }
 
+    [Fact]
+    public async Task CreateBooking_AllowsAnyOpenTimeWithoutAvailabilityRules()
+    {
+        await using var db = CreateDatabase();
+        var (user, dog, service, date) = await Seed(db);
+        var bookingService = new BookingService(db, new AvailabilityService(db));
+
+        var (booking, error) = await bookingService.CreateAsync(user.Id,
+            new CreateBookingDto(dog.Id, service.Id, date, new TimeOnly(21, 30), null),
+            CancellationToken.None);
+
+        Assert.Null(error);
+        Assert.NotNull(booking);
+    }
+
+    [Fact]
+    public async Task CreateBooking_RejectsOwnerBlockedTime()
+    {
+        await using var db = CreateDatabase();
+        var (user, dog, service, date) = await Seed(db);
+        db.Availability.Add(new AvailabilityRule
+        {
+            SpecificDate = date,
+            StartTime = new TimeOnly(14, 0),
+            EndTime = new TimeOnly(16, 0),
+            IsAvailable = false
+        });
+        await db.SaveChangesAsync();
+        var bookingService = new BookingService(db, new AvailabilityService(db));
+
+        var (booking, error) = await bookingService.CreateAsync(user.Id,
+            new CreateBookingDto(dog.Id, service.Id, date, new TimeOnly(15, 0), null),
+            CancellationToken.None);
+
+        Assert.Null(booking);
+        Assert.Equal("That time is no longer available.", error);
+    }
+
     private static AppDbContext CreateDatabase() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
@@ -60,10 +98,6 @@ public class BookingServiceTests
         db.Users.Add(user);
         db.Dogs.Add(dog);
         db.Services.Add(service);
-        db.Availability.Add(new AvailabilityRule
-        {
-            SpecificDate = date, StartTime = new TimeOnly(9, 0), EndTime = new TimeOnly(12, 0), IsAvailable = true
-        });
         await db.SaveChangesAsync();
         return (user, dog, service, date);
     }
