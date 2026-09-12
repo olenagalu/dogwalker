@@ -131,3 +131,18 @@ Tests verify that booking duration and price come from the database service and 
 ## Public deployment
 
 `render.yaml` defines one public Docker web service and a private PostgreSQL database. The API serves the frontend from the same public domain, applies migrations, and uses platform-managed secrets. To deploy it, connect this repository as a Render Blueprint and provide the prompted owner email, owner password, and Google client ID. Then add the final `https://<site>.onrender.com` address to the Google OAuth client's authorized JavaScript origins.
+
+### Welcome email configuration
+
+New email/password and Google-created customer accounts receive one welcome email when SMTP is configured. For Julia's Gmail account, enable Google 2-Step Verification, create a dedicated app password, and configure these Render environment variables:
+
+```text
+Email__SmtpHost=smtp.gmail.com
+Email__SmtpPort=587
+Email__SmtpUsername=kadulinaiulia@gmail.com
+Email__SmtpPassword=<Google app password>
+Email__FromAddress=kadulinaiulia@gmail.com
+Email__FromName=Princess Dog Walker
+```
+
+Store the app password only in Render's environment settings. Never add it to this repository. Registration remains available if the mail server is temporarily unavailable; the failure is recorded in application logs.

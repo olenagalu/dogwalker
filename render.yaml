@@ -20,6 +20,18 @@ services:
         sync: false
       - key: Google__ClientId
         sync: false
+      - key: Email__SmtpHost
+        value: smtp.gmail.com
+      - key: Email__SmtpPort
+        value: "587"
+      - key: Email__SmtpUsername
+        sync: false
+      - key: Email__SmtpPassword
+        sync: false
+      - key: Email__FromAddress
+        sync: false
+      - key: Email__FromName
+        value: Princess Dog Walker
       - key: DB_HOST
         fromDatabase:
           name: princess-dog-walker-db

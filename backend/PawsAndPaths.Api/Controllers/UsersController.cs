@@ -6,12 +6,16 @@ using Microsoft.EntityFrameworkCore;
 using PawsAndPaths.Api.Data;
 using PawsAndPaths.Api.DTOs;
 using PawsAndPaths.Api.Models;
+using PawsAndPaths.Api.Services;
 
 namespace PawsAndPaths.Api.Controllers;
 
 [ApiController, Authorize]
 [Route("api/users")]
-public class UsersController(AppDbContext db, UserManager<AppUser> userManager) : ControllerBase
+public class UsersController(
+    AppDbContext db,
+    UserManager<AppUser> userManager,
+    ICustomerManagementService customerManagementService) : ControllerBase
 {
     [HttpGet("me")]
     public async Task<ActionResult<UserProfileDto>> Me()
@@ -52,5 +56,15 @@ public class UsersController(AppDbContext db, UserManager<AppUser> userManager) 
                     user.PhoneNumber ?? string.Empty, user.Dogs.Select(dog => dog.ToDto()).ToList()));
         }
         return Ok(customers);
+    }
+
+    [HttpPost("customers-with-dog"), Authorize(Roles = AppRoles.Owner)]
+    public async Task<ActionResult<CustomerSummaryDto>> CreateCustomerWithDog(
+        CreateOwnerCustomerWithDogDto request, CancellationToken cancellationToken)
+    {
+        var (customer, error) = await customerManagementService.CreateWithDogAsync(request, cancellationToken);
+        return customer is null
+            ? Conflict(new { message = error })
+            : CreatedAtAction(nameof(Customers), new { id = customer.Id }, customer);
     }
 }

@@ -17,6 +17,11 @@ public class AvailabilityController(AppDbContext db, IAvailabilityService availa
         DateOnly from, DateOnly to, int serviceId, CancellationToken cancellationToken) =>
         Ok(await availabilityService.GetSlotsAsync(from, to, serviceId, cancellationToken));
 
+    [HttpGet("day")]
+    public async Task<ActionResult<IReadOnlyList<PublicScheduleSegmentDto>>> Day(
+        DateOnly date, int serviceId, CancellationToken cancellationToken) =>
+        Ok(await availabilityService.GetDayScheduleAsync(date, serviceId, cancellationToken));
+
     [HttpGet, Authorize(Roles = AppRoles.Owner)]
     public async Task<ActionResult<IReadOnlyList<AvailabilityDto>>> GetRules(CancellationToken cancellationToken) =>
         Ok((await db.Availability.AsNoTracking().Where(rule => !rule.IsAvailable)

@@ -32,3 +32,11 @@ public record UpdateProfileDto(
 public record UserProfileDto(string Id, string FullName, string Email, string Phone, string Role);
 
 public record CustomerSummaryDto(string Id, string FullName, string Email, string Phone, IReadOnlyList<DogDto> Dogs);
+
+public record CreateOwnerCustomerWithDogDto(
+    [Required, MaxLength(120)] string FullName,
+    [Required, EmailAddress, MaxLength(254)] string Email,
+    [Required, Phone, MaxLength(30)] string Phone,
+    [Required, MaxLength(80)] string DogName,
+    [MaxLength(80)] string? DogBreed,
+    [Range(0, 30)] int? DogAge);

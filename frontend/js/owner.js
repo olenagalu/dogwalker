@@ -45,6 +45,58 @@ async function loadRules(){rules=await PrincessApi.request('/api/availability');
 document.querySelector('#rule-block-type').addEventListener('change',toggleRuleTimes);function toggleRuleTimes(){const timed=document.querySelector('#rule-block-type').value==='hours';document.querySelector('#rule-time-fields').hidden=!timed;document.querySelector('#rule-start').required=timed;document.querySelector('#rule-end').required=timed;}
 document.querySelector('#availability-rule-form').addEventListener('submit',async event=>{event.preventDefault();if(!event.currentTarget.reportValidity())return;const id=document.querySelector('#rule-id').value;const allDay=document.querySelector('#rule-block-type').value==='day';const data={dayOfWeek:null,specificDate:ruleDate.value,startTime:allDay?'00:00':document.querySelector('#rule-start').value,endTime:allDay?'23:59':document.querySelector('#rule-end').value,isAvailable:false,notes:document.querySelector('#rule-notes').value};try{await PrincessApi.request(`/api/availability${id?`/${id}`:''}`,{method:id?'PUT':'POST',body:JSON.stringify(data)});clearRule();await loadRules();feedback('Unavailable time saved. Customers will not be offered this period.','success');}catch(error){feedback(error.message,'error');}});
 function editRule(rule){document.querySelector('#rule-id').value=rule.id;document.querySelector('#rule-form-title').textContent='Edit unavailable time';ruleDate.value=rule.specificDate||'';const allDay=rule.startTime.startsWith('00:00')&&rule.endTime.startsWith('23:59');document.querySelector('#rule-block-type').value=allDay?'day':'hours';document.querySelector('#rule-start').value=rule.startTime;document.querySelector('#rule-end').value=rule.endTime;document.querySelector('#rule-notes').value=rule.notes;toggleRuleTimes();document.querySelector('#availability-rule-form').scrollIntoView({behavior:'smooth'});}function clearRule(){document.querySelector('#availability-rule-form').reset();ruleDate.value=ruleDate.min;document.querySelector('#rule-id').value='';document.querySelector('#rule-form-title').textContent='Block an unavailable date';toggleRuleTimes();}document.querySelector('#clear-rule').addEventListener('click',clearRule);async function deleteRule(id){if(!confirm('Make this date and time available again?'))return;try{await PrincessApi.request(`/api/availability/${id}`,{method:'DELETE'});await loadRules();feedback('That date and time are available again.','success');}catch(error){feedback(error.message,'error');}}
-async function loadCustomers(){ownerCustomers=await PrincessApi.request('/api/users/customers');const list=document.querySelector('#owner-customer-list');const selected=ownerBookCustomer.value;list.replaceChildren();ownerBookCustomer.innerHTML='<option value="">Choose a customer</option>';ownerCustomers.forEach(customer=>ownerBookCustomer.add(new Option(`${customer.fullName} · ${customer.email}`,customer.id)));ownerBookCustomer.value=selected;populateOwnerDogs();if(!ownerCustomers.length)return list.append(empty('No registered customers yet.'));ownerCustomers.forEach(customer=>{const dogs=customer.dogs.map(dog=>`${dog.name}${dog.breed?` (${dog.breed})`:''}`).join(', ')||'No dogs saved';list.append(mini(customer.fullName,`${customer.email} · ${customer.phone}\nDogs: ${dogs}`));});}
+async function loadCustomers(){
+  ownerCustomers=await PrincessApi.request('/api/users/customers');
+  const list=document.querySelector('#owner-customer-list');
+  const selected=ownerBookCustomer.value;
+  list.replaceChildren();
+  ownerBookCustomer.innerHTML='<option value="">Choose a customer</option>';
+  ownerCustomers.forEach(customer=>ownerBookCustomer.add(new Option(`${customer.fullName} · ${customer.email}`,customer.id)));
+  ownerBookCustomer.value=selected;
+  populateOwnerDogs();
+  if(!ownerCustomers.length)return list.append(empty('No registered customers or dogs yet.'));
+  ownerCustomers.forEach(customer=>{
+    const card=document.createElement('article');
+    card.className='owner-customer-card';
+    const title=document.createElement('h3');
+    title.textContent=customer.fullName;
+    const contact=document.createElement('p');
+    contact.className='owner-customer-contact';
+    contact.textContent=`${customer.email}${customer.phone?` · ${customer.phone}`:''}`;
+    const dogList=document.createElement('div');
+    dogList.className='registered-dog-list';
+    if(!customer.dogs.length)dogList.append(empty('No dogs saved.'));
+    customer.dogs.forEach(dog=>{
+      const row=document.createElement('div');
+      row.className='registered-dog';
+      const name=document.createElement('strong');
+      name.textContent=dog.name;
+      const details=document.createElement('span');
+      details.textContent=`${dog.breed||'Breed not specified'}${dog.age!=null?` · Age ${dog.age}`:''}`;
+      row.append(name,details);
+      dogList.append(row);
+    });
+    card.append(title,contact,dogList);
+    list.append(card);
+  });
+}
+document.querySelector('#owner-customer-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const customerForm=event.currentTarget;
+  if(!customerForm.reportValidity())return;
+  const data=Object.fromEntries(new FormData(customerForm));
+  data.dogAge=data.dogAge?Number(data.dogAge):null;
+  const button=customerForm.querySelector('button[type="submit"]');
+  button.disabled=true;
+  try{
+    const customer=await PrincessApi.request('/api/users/customers-with-dog',{method:'POST',body:JSON.stringify(data)});
+    customerForm.reset();
+    await loadCustomers();
+    ownerBookCustomer.value=customer.id;
+    populateOwnerDogs();
+    feedback(`${customer.fullName} and ${customer.dogs[0].name} were added.`, 'success');
+  }catch(error){feedback(error.message,'error');}
+  finally{button.disabled=false;}
+});
 if(ownerUser)loadOwner();
 function mini(titleText,bodyText){const card=document.createElement('article');card.className='mini-card';const title=document.createElement('h3');title.textContent=titleText;const body=document.createElement('p');body.textContent=bodyText;body.style.whiteSpace='pre-line';card.append(title,body);return card;}function action(text,handler,extra=''){const button=document.createElement('button');button.className=`link-button ${extra}`;button.type='button';button.textContent=text;button.addEventListener('click',handler);return button;}function empty(text){const node=document.createElement('div');node.className='empty-state';node.textContent=text;return node;}function feedback(text,type){ownerStatus.textContent=text;ownerStatus.className=`form-status ${type}`;ownerStatus.scrollIntoView({behavior:'smooth'});}function formatDate(value){return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`));}function formatTime(value){const[h,m]=value.split(':');return new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(2000,0,1,h,m));}function formatIso(value){return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`;}

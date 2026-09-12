@@ -13,7 +13,9 @@ public class AuthController(
     UserManager<AppUser> userManager,
     SignInManager<AppUser> signInManager,
     ITokenService tokenService,
-    IConfiguration configuration) : ControllerBase
+    IWelcomeEmailSender welcomeEmailSender,
+    IConfiguration configuration,
+    ILogger<AuthController> logger) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto request)
@@ -33,6 +35,7 @@ public class AuthController(
                 result.Errors.GroupBy(error => error.Code).ToDictionary(group => group.Key, group => group.Select(error => error.Description).ToArray())));
 
         await userManager.AddToRoleAsync(user, AppRoles.Customer);
+        await TrySendWelcomeEmailAsync(user);
         return Ok(await ResponseFor(user));
     }
 
@@ -91,6 +94,7 @@ public class AuthController(
             var result = await userManager.CreateAsync(user);
             if (!result.Succeeded) return BadRequest(result.Errors);
             await userManager.AddToRoleAsync(user, AppRoles.Customer);
+            await TrySendWelcomeEmailAsync(user);
         }
 
         return Ok(await ResponseFor(user));
@@ -127,5 +131,17 @@ public class AuthController(
         return new AuthResponseDto(token, expiresAt,
             new UserProfileDto(user.Id, user.FullName, user.Email ?? string.Empty,
                 user.PhoneNumber ?? string.Empty, role));
+    }
+
+    private async Task TrySendWelcomeEmailAsync(AppUser user)
+    {
+        try
+        {
+            await welcomeEmailSender.SendAsync(user.Email!, user.FullName);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Welcome email could not be sent for user {UserId}.", user.Id);
+        }
     }
 }
