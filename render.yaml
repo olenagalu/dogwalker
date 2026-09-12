@@ -19,7 +19,7 @@ services:
       - key: Owner__Password
         sync: false
       - key: Google__ClientId
-        sync: false
+        value: 434789869110-2es6e7i7bl6rhvs4gl93d641v79kuvv3.apps.googleusercontent.com
       - key: Email__SmtpHost
         value: smtp.gmail.com
       - key: Email__SmtpPort
