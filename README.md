@@ -2,9 +2,11 @@
 
 Princess Dog Walker is a full-stack booking and business-management application I created for my friend Julia. She already provides dog walking and pet-care services and asked me for help expanding her small business. Until now, growing meant handling more questions, availability checks, and booking details through individual conversations. I wanted to give her a professional online presence and a system that could take care of that repetitive work while keeping the personal service her customers value.
 
-The application brings the public website and the day-to-day business workflow together. Visitors can learn about Julia's services, see current prices, and check real availability before creating an account. Customers can save their dogs, request regular or overnight care, avoid unavailable times, and follow each request from their dashboard. Julia has a protected owner dashboard where she can manage services, customers, bookings, schedule blocks, and booking statuses without editing the website herself.
+Visitors can learn about Julia's services, see current prices, and check real availability before creating an account. Customers can save their dogs, request regular or overnight care, avoid unavailable times, and follow each request from their dashboard. Julia has a protected owner dashboard where she can manage services, customers, bookings, schedule blocks, and booking statuses without editing the website herself.
 
 This project was also an opportunity to solve a real scheduling problem rather than build only a visual demo. Availability is calculated from service duration, existing bookings, owner-created blocks, and special overnight care windows. The API performs the final validation so two customers cannot book the same time, even if they both opened the booking page before the slot was taken.
+
+The application is still in active development. I plan to add new features and improve existing ones as Julia uses the system, with the goal of making it even more convenient for her to manage and grow her business.
 
 **Live site:** [princess-dog-walker.onrender.com](https://princess-dog-walker.onrender.com)
 
