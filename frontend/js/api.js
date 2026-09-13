@@ -37,7 +37,8 @@ const PrincessApi = (() => {
   function requireUser(role) {
     const current = user();
     if (!current || (role && current.role !== role)) {
-      const returnTo = encodeURIComponent(window.location.pathname.split('/').pop() || 'dashboard.html');
+      const page = window.location.pathname.split('/').pop() || 'dashboard.html';
+      const returnTo = encodeURIComponent(`${page}${window.location.search}`);
       window.location.href = `auth.html?returnTo=${returnTo}`;
       return null;
     }

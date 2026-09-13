@@ -69,7 +69,13 @@ document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', (
 document.querySelector('#show-forgot').addEventListener('click', () => showPanel('forgot'));
 document.querySelector('[data-back-login]').addEventListener('click', () => showPanel('login'));
 function feedback(message, type) { statusBox.textContent = message; statusBox.className = `form-status ${type}`; }
-function destination(user) { const requested = new URLSearchParams(location.search).get('returnTo'); return requested || (user.role === 'Owner' ? 'owner.html' : 'dashboard.html'); }
+function destination(user) {
+  const requested = new URLSearchParams(location.search).get('returnTo');
+  const safeLocalPage = /^[a-z0-9-]+\.html(?:\?[^#]*)?(?:#.*)?$/i;
+  return requested && safeLocalPage.test(requested)
+    ? requested
+    : (user.role === 'Owner' ? 'owner.html' : 'dashboard.html');
+}
 
 document.querySelector('#login-panel').addEventListener('submit', async event => {
   event.preventDefault(); const form = event.currentTarget;

@@ -32,15 +32,3 @@ nav?.querySelectorAll('a').forEach(link => link.addEventListener('click', () => 
 }));
 
 document.querySelectorAll('[data-year]').forEach(element => { element.textContent = new Date().getFullYear(); });
-
-const decorLayer = document.createElement('div');
-decorLayer.className = 'decor-layer';
-decorLayer.setAttribute('aria-hidden', 'true');
-[['sparkle', '✦'], ['heart', '♥'], ['bow', ''], ['sparkle', '✧'], ['heart', '♥'], ['sparkle', '✦']]
-  .forEach(([className, symbol]) => {
-    const decoration = document.createElement('span');
-    decoration.className = `decor ${className}`;
-    decoration.textContent = symbol;
-    decorLayer.append(decoration);
-  });
-document.body.prepend(decorLayer);

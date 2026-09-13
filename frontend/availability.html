@@ -1,6 +1,92 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="See open Princess Dog Walker dates and times."><title>Availability | Princess Dog Walker</title><link rel="stylesheet" href="css/styles.css?v=20260912-site-logo"></head><body><a class="skip-link" href="#main">Skip to content</a>
-  <header class="site-header"><div class="container nav"><a class="brand" href="index.html" aria-label="Princess Dog Walker home"><img class="brand-logo" src="assets/princess-dog-walker-logo-transparent.png" alt=""><span>Princess Dog Walker</span></a><button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">Menu</button><nav class="nav-links" id="nav-links" aria-label="Main navigation"></nav></div></header>
-  <main id="main"><section class="page-hero"><div class="container"><span class="eyebrow">Live calendar</span><h1>Pick a date and time.</h1><p class="lede">Julia is available day and night throughout the year unless a date or time has been blocked. See the calendar first, then select a date to view its complete schedule.</p></div></section><section class="section-sm"><div class="container availability-layout"><form class="filter-card" id="availability-form"><div class="field"><label for="availability-service">Service</label><select id="availability-service" required><option value="">Choose a service</option></select></div><div class="field"><label for="availability-view">Calendar view</label><select id="availability-view"><option value="day">One day</option><option value="week">One week</option><option value="month" selected>Full month</option><option value="year">Full year</option></select></div><div class="field calendar-field"><label for="availability-date">Date you’re interested in</label><input type="date" id="availability-date" required><span class="hint">This opens the calendar around your chosen date.</span></div><button class="button" type="submit">Show calendar</button></form><div class="public-calendar-panel"><div class="public-calendar-toolbar"><button class="calendar-nav-button" id="public-calendar-prev" type="button" aria-label="Previous period">←</button><div class="calendar-heading"><span class="eyebrow">Select a date</span><h2 id="calendar-period">Choose a service to begin</h2></div><button class="calendar-nav-button" id="public-calendar-next" type="button" aria-label="Next period">→</button></div><div id="calendar-grid"><div class="empty-state">Choose a service and date, then show the calendar.</div></div><section class="day-schedule" id="day-schedule" aria-live="polite" hidden><div class="day-schedule-heading"><div><span class="eyebrow">Daily schedule</span><h2 id="schedule-date"></h2><p id="schedule-service" class="hint"></p></div><div class="schedule-legend" aria-label="Schedule legend"><span><i class="available"></i>Available</span><span><i class="booked"></i>Booked</span><span><i class="unavailable"></i>Unavailable</span></div></div><div id="timeline-list"></div></section><div class="booking-help"><strong>Privacy note:</strong> Booked periods are shown without customer or pet details. Choose any available time to continue booking. If you have questions, <a href="contact.html">contact Julia</a>.</div></div></div></section></main>
-  <footer class="site-footer"><div class="container"><div class="footer-bottom">© <span data-year></span> Princess Dog Walker · <a href="book.html">Ready to book?</a></div></div></footer>
-  <script src="js/api.js"></script><script src="js/main.js?v=20260912-site-logo"></script><script src="js/availability.js"></script>
-</body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="See open Princess Dog Walker dates and times.">
+  <title>Availability | Princess Dog Walker</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260912-availability-calendar">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="index.html" aria-label="Princess Dog Walker home">
+        <img class="brand-logo" src="assets/princess-dog-walker-logo-transparent.png?v=20260912-logo" alt="">
+        <span>Princess Dog Walker</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">Menu</button>
+      <nav class="nav-links" id="nav-links" aria-label="Main navigation"></nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-hero availability-hero">
+      <div class="container">
+        <span class="eyebrow">Live availability</span>
+        <h1>Find their next good day.</h1>
+        <p class="lede">Browse Julia’s current calendar, check unavailable times, and choose an open time to send a booking request.</p>
+      </div>
+    </section>
+
+    <section class="section-sm">
+      <div class="container availability-page">
+        <div class="availability-controls" aria-label="Calendar controls">
+          <div class="field availability-service-field">
+            <label for="availability-service">Service</label>
+            <select id="availability-service" aria-describedby="availability-service-hint">
+              <option value="">Loading services…</option>
+            </select>
+            <span class="hint" id="availability-service-hint">Times are calculated for the selected service length.</span>
+          </div>
+          <div class="field">
+            <span class="control-label">Calendar view</span>
+            <div class="calendar-view-switch" role="group" aria-label="Calendar view">
+              <button class="calendar-view-button active" type="button" data-calendar-view="month" aria-pressed="true">Month</button>
+              <button class="calendar-view-button" type="button" data-calendar-view="week" aria-pressed="false">Week</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="public-calendar-panel">
+          <div class="public-calendar-toolbar">
+            <button class="calendar-nav-button" id="public-calendar-prev" type="button" aria-label="Previous month">←</button>
+            <div class="calendar-heading">
+              <span class="eyebrow" id="calendar-view-label">Month view</span>
+              <h2 id="calendar-period" aria-live="polite"></h2>
+            </div>
+            <button class="calendar-nav-button" id="public-calendar-next" type="button" aria-label="Next month">→</button>
+          </div>
+
+          <div id="calendar-grid" aria-live="polite"><div class="empty-state">Loading the current month…</div></div>
+
+          <section class="day-schedule" id="day-schedule" aria-live="polite" hidden>
+            <div class="day-schedule-heading">
+              <div>
+                <span class="eyebrow">Choose a time</span>
+                <h2 id="schedule-date"></h2>
+                <p id="schedule-service" class="hint"></p>
+              </div>
+              <div class="schedule-legend" aria-label="Schedule legend">
+                <span><i class="available"></i>Available</span>
+                <span><i class="booked"></i>Booked</span>
+                <span><i class="unavailable"></i>Unavailable</span>
+              </div>
+            </div>
+            <div id="timeline-list"></div>
+          </section>
+
+          <div class="booking-help"><strong>Privacy note:</strong> Taken periods never show customer or pet details. Select an available time to continue to the secure booking request.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container"><div class="footer-bottom">© <span data-year></span> Princess Dog Walker · <a href="book.html">Ready to book?</a></div></div>
+  </footer>
+  <script src="js/api.js"></script>
+  <script src="js/main.js?v=20260912-site-logo"></script>
+  <script src="js/availability.js?v=20260912-availability-calendar"></script>
+</body>
+</html>

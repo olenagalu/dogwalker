@@ -1,45 +1,62 @@
 const serviceSelect = document.querySelector('#availability-service');
-const viewSelect = document.querySelector('#availability-view');
-const dateInput = document.querySelector('#availability-date');
 const calendarGrid = document.querySelector('#calendar-grid');
 const periodHeading = document.querySelector('#calendar-period');
+const viewLabel = document.querySelector('#calendar-view-label');
 const schedulePanel = document.querySelector('#day-schedule');
 const scheduleDate = document.querySelector('#schedule-date');
 const scheduleService = document.querySelector('#schedule-service');
 const timelineList = document.querySelector('#timeline-list');
+const viewButtons = [...document.querySelectorAll('[data-calendar-view]')];
 const today = new Date();
 const localToday = formatIso(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
 let services = [];
 let calendarDate = parseDate(localToday);
 let selectedDate = null;
+let calendarView = 'month';
 
-dateInput.min = localToday;
-dateInput.value = localToday;
+initializeCalendar();
 
-PrincessApi.request('/api/services').then(items => {
-  services = items;
-  items.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}`, service.id)));
-});
+async function initializeCalendar() {
+  try {
+    services = await PrincessApi.request('/api/services');
+    serviceSelect.replaceChildren();
+    if (!services.length) {
+      serviceSelect.add(new Option('No services are currently available', ''));
+      serviceSelect.disabled = true;
+      calendarGrid.replaceChildren(empty('No services are currently available.'));
+      return;
+    }
+    services.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}`, service.id)));
+    serviceSelect.value = String(services[0].id);
+    await renderCalendar();
+  } catch (error) {
+    serviceSelect.replaceChildren(new Option('Services could not be loaded', ''));
+    calendarGrid.replaceChildren(empty(error.message));
+  }
+}
 
-document.querySelector('#availability-form').addEventListener('submit', event => {
-  event.preventDefault();
-  if (!event.currentTarget.reportValidity()) return;
-  calendarDate = parseDate(dateInput.value);
+serviceSelect.addEventListener('change', () => {
   selectedDate = null;
   renderCalendar();
 });
+
+viewButtons.forEach(button => button.addEventListener('click', () => {
+  calendarView = button.dataset.calendarView;
+  viewButtons.forEach(option => {
+    const active = option === button;
+    option.classList.toggle('active', active);
+    option.setAttribute('aria-pressed', String(active));
+  });
+  selectedDate = null;
+  renderCalendar();
+}));
 
 document.querySelector('#public-calendar-prev').addEventListener('click', () => navigateCalendar(-1));
 document.querySelector('#public-calendar-next').addEventListener('click', () => navigateCalendar(1));
 
 function navigateCalendar(direction) {
-  if (!serviceSelect.value) return;
-  const view = viewSelect.value;
-  if (view === 'day') calendarDate.setDate(calendarDate.getDate() + direction);
-  if (view === 'week') calendarDate.setDate(calendarDate.getDate() + (7 * direction));
-  if (view === 'month') calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + direction, 1);
-  if (view === 'year') calendarDate = new Date(calendarDate.getFullYear() + direction, calendarDate.getMonth(), 1);
-  dateInput.value = formatIso(calendarDate) < localToday ? localToday : formatIso(calendarDate);
+  if (calendarView === 'month') calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + direction, 1);
+  else calendarDate.setDate(calendarDate.getDate() + (7 * direction));
   selectedDate = null;
   renderCalendar();
 }
@@ -48,68 +65,120 @@ async function renderCalendar() {
   const service = selectedService();
   if (!service) return;
   schedulePanel.hidden = true;
-  calendarGrid.innerHTML = '<div class="empty-state">Building your calendar…</div>';
-  const view = viewSelect.value;
-  const range = getRange(view, formatIso(calendarDate));
+  calendarGrid.innerHTML = '<div class="empty-state">Checking Julia’s calendar…</div>';
+  const range = getRange(calendarView, formatIso(calendarDate));
   periodHeading.textContent = range.label;
+  viewLabel.textContent = calendarView === 'month' ? 'Month view' : 'Week view';
+  updateNavigationLabels();
 
-  let openDates = new Set();
-  if (!service.isOvernightStay && view !== 'year') {
-    try {
-      const slots = await PrincessApi.request(`/api/availability/slots?from=${range.from}&to=${range.to}&serviceId=${service.id}`);
-      openDates = new Set(slots.map(slot => slot.date));
-    } catch (error) {
-      calendarGrid.replaceChildren(empty(error.message));
+  try {
+    if (calendarView === 'month') {
+      const slots = service.isOvernightStay
+        ? []
+        : await PrincessApi.request(`/api/availability/slots?from=${range.from}&to=${range.to}&serviceId=${service.id}`);
+      const openDates = new Set(slots.map(slot => slot.date));
+      calendarGrid.replaceChildren(renderMonthGrid(calendarDate.getFullYear(), calendarDate.getMonth(), openDates));
       return;
     }
+
+    const dates = datesBetween(range.from, range.to);
+    const schedules = await Promise.all(dates.map(date =>
+      PrincessApi.request(`/api/availability/day?date=${date}&serviceId=${service.id}`)));
+    renderWeekSchedule(dates, schedules, service);
+  } catch (error) {
+    calendarGrid.replaceChildren(empty(error.message));
   }
-
-  calendarGrid.replaceChildren();
-  if (view === 'day') renderDayGrid(range.from, openDates);
-  if (view === 'week') renderWeekGrid(range.from, openDates);
-  if (view === 'month') calendarGrid.append(renderMonthGrid(calendarDate.getFullYear(), calendarDate.getMonth(), openDates));
-  if (view === 'year') renderYearGrid(calendarDate.getFullYear());
 }
 
-function renderDayGrid(date, openDates) {
-  const grid = document.createElement('div');
-  grid.className = 'public-day-view';
-  grid.append(dateButton(date, openDates));
-  calendarGrid.append(grid);
+function updateNavigationLabels() {
+  const period = calendarView === 'month' ? 'month' : 'week';
+  document.querySelector('#public-calendar-prev').setAttribute('aria-label', `Previous ${period}`);
+  document.querySelector('#public-calendar-next').setAttribute('aria-label', `Next ${period}`);
 }
 
-function renderWeekGrid(from, openDates) {
-  const grid = calendarShell('public-week-calendar');
-  const start = parseDate(from);
-  for (let offset = 0; offset < 7; offset += 1) {
-    const date = new Date(start);
-    date.setDate(start.getDate() + offset);
-    grid.append(dateButton(formatIso(date), openDates));
-  }
-  calendarGrid.append(grid);
-}
-
-function renderMonthGrid(year, month, openDates, compact = false) {
-  const grid = calendarShell(compact ? 'public-month-calendar mini' : 'public-month-calendar');
+function renderMonthGrid(year, month, openDates) {
+  const grid = calendarShell('public-month-calendar');
   const firstDay = new Date(year, month, 1).getDay();
   for (let blank = 0; blank < firstDay; blank += 1) grid.append(calendarBlank());
   const days = new Date(year, month + 1, 0).getDate();
-  for (let day = 1; day <= days; day += 1) grid.append(dateButton(formatIso(new Date(year, month, day)), openDates, compact));
+  for (let day = 1; day <= days; day += 1) grid.append(dateButton(formatIso(new Date(year, month, day)), openDates));
   return grid;
 }
 
-function renderYearGrid(year) {
-  const yearGrid = document.createElement('div');
-  yearGrid.className = 'public-year-calendar';
-  for (let month = 0; month < 12; month += 1) {
-    const section = document.createElement('section');
-    section.className = 'public-year-month';
-    const heading = document.createElement('h3');
-    heading.textContent = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(year, month, 1));
-    section.append(heading, renderMonthGrid(year, month, new Set(), true));
-    yearGrid.append(section);
-  }
-  calendarGrid.append(yearGrid);
+function renderWeekSchedule(dates, schedules, service) {
+  const scroller = document.createElement('div');
+  scroller.className = 'public-week-scroll';
+  const grid = document.createElement('div');
+  grid.className = 'public-week-schedule';
+
+  dates.forEach((date, index) => {
+    const segments = schedules[index];
+    const column = document.createElement('article');
+    column.className = 'week-day-column';
+    if (date === localToday) column.classList.add('is-today');
+    if (date < localToday) column.classList.add('is-past');
+
+    const header = document.createElement('button');
+    header.type = 'button';
+    header.className = 'week-day-heading';
+    header.disabled = date < localToday;
+    const dayName = document.createElement('span');
+    dayName.textContent = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+    const dayNumber = document.createElement('strong');
+    dayNumber.textContent = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T00:00:00Z`));
+    header.append(dayName, dayNumber);
+    header.addEventListener('click', () => selectDate(date));
+
+    const label = document.createElement('p');
+    label.className = 'week-taken-label';
+    label.textContent = 'Taken times';
+    const takenList = document.createElement('div');
+    takenList.className = 'week-taken-list';
+    const ranges = summarizeTakenTimes(segments);
+    if (!ranges.length) {
+      const open = document.createElement('span');
+      open.className = 'week-all-open';
+      open.textContent = 'No times taken';
+      takenList.append(open);
+    } else {
+      ranges.forEach(range => takenList.append(takenTime(range)));
+    }
+
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'week-day-action';
+    action.disabled = date < localToday;
+    action.textContent = service.isOvernightStay ? 'Choose dates' : 'View & request times';
+    action.addEventListener('click', () => selectDate(date));
+    column.append(header, label, takenList, action);
+    grid.append(column);
+  });
+
+  scroller.append(grid);
+  calendarGrid.replaceChildren(scroller);
+}
+
+function summarizeTakenTimes(segments) {
+  const taken = segments.filter(segment => segment.status !== 'Available');
+  const ranges = [];
+  taken.forEach(segment => {
+    const startMinutes = timeToMinutes(segment.startTime);
+    const previous = ranges.at(-1);
+    if (previous && previous.status === segment.status && previous.endMinutes === startMinutes) previous.endMinutes += 30;
+    else ranges.push({ status: segment.status, startMinutes, endMinutes: startMinutes + 30 });
+  });
+  return ranges;
+}
+
+function takenTime(range) {
+  const item = document.createElement('div');
+  item.className = `week-taken-time ${range.status.toLowerCase()}`;
+  const status = document.createElement('span');
+  status.textContent = range.status;
+  const time = document.createElement('strong');
+  time.textContent = `${formatMinutes(range.startMinutes)}–${formatMinutes(range.endMinutes)}`;
+  item.append(status, time);
+  return item;
 }
 
 function calendarShell(className) {
@@ -131,7 +200,7 @@ function calendarBlank() {
   return blank;
 }
 
-function dateButton(date, openDates, compact = false) {
+function dateButton(date, openDates) {
   const value = parseDate(date);
   const button = document.createElement('button');
   button.type = 'button';
@@ -147,7 +216,7 @@ function dateButton(date, openDates, compact = false) {
   number.textContent = value.getDate();
   const status = document.createElement('span');
   const service = selectedService();
-  status.textContent = compact ? '' : isPast ? 'Past' : service?.isOvernightStay ? 'Choose date' : openDates.has(date) ? 'Open times' : 'View day';
+  status.textContent = isPast ? 'Past' : service?.isOvernightStay ? 'Choose dates' : openDates.has(date) ? 'Open times' : 'View schedule';
   button.append(number, status);
   button.setAttribute('aria-label', `${formatLongDate(date)}${openDates.has(date) ? ', open times available' : ''}`);
   button.addEventListener('click', () => selectDate(date));
@@ -156,7 +225,6 @@ function dateButton(date, openDates, compact = false) {
 
 async function selectDate(date) {
   selectedDate = date;
-  dateInput.value = date;
   document.querySelectorAll('.public-calendar-day[data-date]').forEach(button => {
     button.classList.toggle('is-selected', button.dataset.date === date);
   });
@@ -167,17 +235,16 @@ async function selectDate(date) {
   scheduleService.textContent = `${service.name} · ${service.durationMinutes} minutes`;
 
   if (service.isOvernightStay) {
-    timelineList.replaceChildren();
     const card = document.createElement('div');
     card.className = 'overnight-date-choice';
     const copy = document.createElement('p');
-    copy.textContent = 'Use this as your check-in date, then choose a checkout date on the booking form.';
+    copy.textContent = 'Use this as your check-in date, then choose the checkout date before sending your request.';
     const link = document.createElement('a');
     link.className = 'button button-clay';
-    link.href = `book.html?serviceId=${service.id}&date=${date}`;
+    link.href = bookingUrl(service.id, date);
     link.textContent = 'Choose overnight dates';
     card.append(copy, link);
-    timelineList.append(card);
+    timelineList.replaceChildren(card);
     schedulePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
@@ -216,18 +283,23 @@ function renderTimeline(segments, date, service) {
 function scheduleSlot(segment, date, service) {
   const bookable = segment.isBookable;
   const node = document.createElement(bookable ? 'a' : 'div');
-  const statusClass = segment.status.toLowerCase();
-  node.className = `timeline-slot ${statusClass}${bookable ? ' is-bookable' : ''}`;
+  node.className = `timeline-slot ${segment.status.toLowerCase()}${bookable ? ' is-bookable' : ''}`;
   const time = document.createElement('strong');
   time.textContent = formatTime(segment.startTime);
   const status = document.createElement('span');
-  status.textContent = bookable ? 'Available' : segment.status === 'Available' ? `Doesn’t fit ${service.durationMinutes} min` : segment.status;
+  status.textContent = bookable ? 'Request this time' : segment.status === 'Available' ? `Doesn’t fit ${service.durationMinutes} min` : segment.status;
   node.append(time, status);
   if (bookable) {
-    node.href = `book.html?serviceId=${service.id}&date=${date}&time=${segment.startTime}`;
-    node.setAttribute('aria-label', `Book ${service.name} on ${formatLongDate(date)} at ${formatTime(segment.startTime)}`);
+    node.href = bookingUrl(service.id, date, segment.startTime);
+    node.setAttribute('aria-label', `Request ${service.name} on ${formatLongDate(date)} at ${formatTime(segment.startTime)}`);
   }
   return node;
+}
+
+function bookingUrl(serviceId, date, time = '') {
+  const params = new URLSearchParams({ serviceId: String(serviceId), date });
+  if (time) params.set('time', time);
+  return `book.html?${params}`;
 }
 
 function getRange(view, value) {
@@ -238,20 +310,21 @@ function getRange(view, value) {
     from.setDate(selected.getDate() - selected.getDay());
     to = new Date(from);
     to.setDate(from.getDate() + 6);
-  }
-  if (view === 'month') {
+  } else {
     from = new Date(selected.getFullYear(), selected.getMonth(), 1);
     to = new Date(selected.getFullYear(), selected.getMonth() + 1, 0);
   }
-  if (view === 'year') {
-    from = new Date(selected.getFullYear(), 0, 1);
-    to = new Date(selected.getFullYear(), 11, 31);
-  }
-  const label = view === 'day' ? formatLongDate(formatIso(from))
-    : view === 'month' ? new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(from)
-      : view === 'year' ? String(from.getFullYear())
-        : `${formatShortDate(formatIso(from))} – ${formatShortDate(formatIso(to))}`;
+  const label = view === 'month'
+    ? new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(from)
+    : `${formatShortDate(formatIso(from))} – ${formatShortDate(formatIso(to))}`;
   return { from: formatIso(from), to: formatIso(to), label };
+}
+
+function datesBetween(from, to) {
+  const dates = [];
+  const end = parseDate(to);
+  for (let value = parseDate(from); value <= end; value.setDate(value.getDate() + 1)) dates.push(formatIso(value));
+  return dates;
 }
 
 function selectedService() { return services.find(item => String(item.id) === serviceSelect.value); }
@@ -259,6 +332,8 @@ function empty(text) { const node = document.createElement('div'); node.classNam
 function parseDate(value) { const [year, month, day] = value.split('-').map(Number); return new Date(year, month - 1, day); }
 function formatIso(value) { const year = value.getFullYear(); const month = String(value.getMonth() + 1).padStart(2, '0'); const day = String(value.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
 function formatLongDate(value) { return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`)); }
-function formatShortDate(value) { return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`)); }
+function formatShortDate(value) { return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`)); }
 function formatTime(value) { const [hours, minutes] = value.split(':'); return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(2000, 0, 1, hours, minutes)); }
+function formatMinutes(value) { const normalized = value % (24 * 60); return formatTime(`${String(Math.floor(normalized / 60)).padStart(2, '0')}:${String(normalized % 60).padStart(2, '0')}`); }
+function timeToMinutes(value) { const [hours, minutes] = value.split(':').map(Number); return (hours * 60) + minutes; }
 function hourOf(value) { return Number(value.split(':')[0]); }
