@@ -1,28 +1,39 @@
 # Princess Dog Walker
 
-A full-stack dog-walking platform with a public website, customer accounts, live services and availability, conflict-safe booking, customer dashboards, and a protected owner dashboard.
+Princess Dog Walker is a full-stack booking and business-management application I created for my friend Julia. She already provides dog walking and pet-care services and asked me for help expanding her small business. Until now, growing meant handling more questions, availability checks, and booking details through individual conversations. I wanted to give her a professional online presence and a system that could take care of that repetitive work while keeping the personal service her customers value.
+
+The application brings the public website and the day-to-day business workflow together. Visitors can learn about Julia's services, see current prices, and check real availability before creating an account. Customers can save their dogs, request regular or overnight care, avoid unavailable times, and follow each request from their dashboard. Julia has a protected owner dashboard where she can manage services, customers, bookings, schedule blocks, and booking statuses without editing the website herself.
+
+This project was also an opportunity to solve a real scheduling problem rather than build only a visual demo. Availability is calculated from service duration, existing bookings, owner-created blocks, and special overnight care windows. The API performs the final validation so two customers cannot book the same time, even if they both opened the booking page before the slot was taken.
 
 **Live site:** [princess-dog-walker.onrender.com](https://princess-dog-walker.onrender.com)
 
-## Site tour
+## Feature highlights
 
-### Home
+### Service-aware availability calendar
 
-![Princess Dog Walker home page](docs/screenshots/home.png)
+![Live monthly availability calendar with open dates](docs/screenshots/availability-calendar.png)
 
-The home page introduces the business and provides direct paths to the current services, live availability, and secure booking flow. The navigation collapses into a keyboard-accessible menu on smaller screens.
+The public calendar is driven by live API data rather than a static schedule. A visitor first chooses a service because its duration determines which start times can fit. The calendar then:
 
-### Services
+- marks dates that still have bookable times in **Month** view;
+- summarizes occupied periods across seven days in **Week** view;
+- opens a detailed daily timeline when a date is selected; and
+- carries the chosen service, date, and time into the booking form.
 
-![Princess Dog Walker services page](docs/screenshots/services.png)
+Pending and confirmed bookings and owner-created blocks are removed from the available slots. The public view shows only availability—not customer or dog details. Overnight care has a separate check-in/checkout flow that validates the care windows across the entire stay.
 
-The services page reads active offerings and prices from the API, sorts them from lowest to highest price, and points customers to the booking flow. Julia can add, edit, disable, or remove eligible services from the protected owner dashboard, so the public list stays current without editing HTML.
+### Customer accounts and secure booking
 
-### Availability
+![Customer sign-in with Google and email options](docs/screenshots/account.png)
 
-![Princess Dog Walker availability page](docs/screenshots/availability.png)
+Customers can create an account with email or Google, save multiple dogs, request an available appointment, and track every booking from a private dashboard. The browser provides a friendly review step, while the API re-checks dog ownership, service price and duration, owner blocks, and booking conflicts before it saves the request.
 
-Visitors choose a service because appointment length affects which times are bookable. The month view identifies dates with openings, while the week view summarizes taken periods. Selecting a date shows a detailed timeline and links an available time into the booking form. Pending and confirmed bookings, along with Julia's date or time blocks, remove overlapping slots; private customer and dog details are never shown publicly. Overnight services use check-in and checkout dates and validate only their scheduled overnight and midday care windows.
+### API-managed services
+
+![Live service catalog with current prices](docs/screenshots/services.png)
+
+The public catalog loads active services and prices from the API. From the protected owner dashboard, Julia can create, edit, disable, or remove eligible services without changing the frontend code. The same dashboard includes a color-coded booking calendar, status updates, customer-assisted booking, availability blocks, and per-stay overnight schedule controls.
 
 ## How booking works
 
@@ -33,30 +44,35 @@ Visitors choose a service because appointment length affects which times are boo
 
 The owner dashboard also provides a color-coded booking calendar, customer-assisted booking, availability blocks, service management, and per-booking overnight schedule controls. All owner operations are protected by server-side role authorization.
 
-## Technology
+## Built with
 
-- Frontend: semantic HTML, responsive CSS, and vanilla JavaScript
-- API: ASP.NET Core 10 with JWT authentication and role authorization
-- Accounts: ASP.NET Core Identity
-- Google accounts: Google Identity Services with backend ID-token verification
-- Database: PostgreSQL with Entity Framework Core migrations
-- Local orchestration: Docker Compose
+| Layer | Technology |
+|---|---|
+| Frontend | Semantic HTML, responsive CSS, and vanilla JavaScript |
+| API | ASP.NET Core 10 Web API |
+| Authentication | ASP.NET Core Identity, JWT role authorization, and Google Identity Services |
+| Data | PostgreSQL 17 and Entity Framework Core migrations |
+| Email | MailKit/SMTP for customer welcome messages |
+| Delivery | Docker, Nginx, Docker Compose, and a Render Blueprint |
+| Tests | xUnit with EF Core's in-memory provider |
 
-## Main structure
+## Project structure
+
+The repository keeps the browser client, API, and automated tests separate, while the solution and deployment files at the root tie them together:
 
 ```text
 frontend/
-  index.html, services.html, availability.html, about.html, contact.html
-  auth.html, book.html, dashboard.html, owner.html
-  css/styles.css
-  js/api.js, main.js, auth.js, booking.js, dashboard.js, owner.js, ...
+  *.html             Public, authentication, customer, and owner pages
+  css/styles.css     Shared responsive design system
+  js/                API client and page-specific behavior
 backend/PawsAndPaths.Api/
-  Controllers/       Auth, users, dogs, services, availability, bookings, contact
-  Models/            AppUser, Dog, ServiceOffering, AvailabilityRule, Booking
-  DTOs/              Validated public API contracts
-  Services/          Tokens, booking conflicts, availability, owner seeding
-  Data/Migrations/   PostgreSQL schema history
-tests/               Booking duration, price, and overlap tests
+  Controllers/       HTTP endpoints and authorization boundaries
+  Models/ + DTOs/    Database entities and validated API contracts
+  Services/          Booking, availability, email, auth, and seeding logic
+  Data/Migrations/   EF Core context and PostgreSQL schema history
+tests/                API and business-rule tests
+docker-compose.yml    Local frontend, API, and PostgreSQL environment
+render.yaml           Production deployment blueprint
 ```
 
 ## Start with Docker
@@ -162,7 +178,11 @@ Tests verify that booking duration and price come from the database service and 
 
 ## Public deployment
 
-`render.yaml` defines one public Docker web service and a private PostgreSQL database. The API serves the frontend from the same public domain, applies migrations, and uses platform-managed secrets. To deploy it, connect this repository as a Render Blueprint and provide the prompted owner email, owner password, and Google client ID. Then add the final `https://<site>.onrender.com` address to the Google OAuth client's authorized JavaScript origins.
+I chose **Render** because this project needs more than static website hosting: it has an ASP.NET Core API, a PostgreSQL database, environment secrets, migrations, and a browser frontend. Render can deploy the Dockerized API, provide a managed PostgreSQL database, and serve the frontend and API from the same public domain. Connecting the GitHub repository also enables automatic deployments when the project is updated, which makes maintaining a live application for a small business much simpler.
+
+The infrastructure is described in `render.yaml`, so the production web service, database connection, health check, and required environment variables are versioned with the project instead of being configured only through a dashboard. Sensitive values such as the JWT signing key, owner credentials, and email password remain in Render's environment settings rather than in the repository.
+
+To deploy it, connect this repository as a Render Blueprint and provide the prompted owner email, owner password, and Google client ID. The API serves the frontend from the same public domain and applies EF Core migrations at startup. Then add the final `https://<site>.onrender.com` address to the Google OAuth client's authorized JavaScript origins.
 
 ### Welcome email configuration
 
