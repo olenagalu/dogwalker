@@ -2,6 +2,37 @@
 
 A full-stack dog-walking platform with a public website, customer accounts, live services and availability, conflict-safe booking, customer dashboards, and a protected owner dashboard.
 
+**Live site:** [princess-dog-walker.onrender.com](https://princess-dog-walker.onrender.com)
+
+## Site tour
+
+### Home
+
+![Princess Dog Walker home page](docs/screenshots/home.png)
+
+The home page introduces the business and provides direct paths to the current services, live availability, and secure booking flow. The navigation collapses into a keyboard-accessible menu on smaller screens.
+
+### Services
+
+![Princess Dog Walker services page](docs/screenshots/services.png)
+
+The services page reads active offerings and prices from the API, sorts them from lowest to highest price, and points customers to the booking flow. Julia can add, edit, disable, or remove eligible services from the protected owner dashboard, so the public list stays current without editing HTML.
+
+### Availability
+
+![Princess Dog Walker availability page](docs/screenshots/availability.png)
+
+Visitors choose a service because appointment length affects which times are bookable. The month view identifies dates with openings, while the week view summarizes taken periods. Selecting a date shows a detailed timeline and links an available time into the booking form. Pending and confirmed bookings, along with Julia's date or time blocks, remove overlapping slots; private customer and dog details are never shown publicly. Overnight services use check-in and checkout dates and validate only their scheduled overnight and midday care windows.
+
+## How booking works
+
+1. A visitor checks services and availability without signing in.
+2. A customer creates an account, saves one or more dogs, and chooses a service, date, and available time. Overnight stays use check-in and checkout dates instead.
+3. The browser presents a final review, but the API independently validates the service, dog ownership, price, duration, blocks, and booking conflicts before saving anything.
+4. Customer requests begin as **Pending**. Julia can confirm, decline, complete, or cancel them from the owner dashboard, and the customer sees the current status in their dashboard.
+
+The owner dashboard also provides a color-coded booking calendar, customer-assisted booking, availability blocks, service management, and per-booking overnight schedule controls. All owner operations are protected by server-side role authorization.
+
 ## Technology
 
 - Frontend: semantic HTML, responsive CSS, and vanilla JavaScript
@@ -84,9 +115,11 @@ python3 -m http.server 5500 --directory frontend
 
 ## Availability and booking conflicts
 
-Availability rules support either a recurring weekday or one specific date. Rules can open a time range or block a date/time range. Specific available ranges override recurring available ranges for that date; blocks always remove overlapping time.
+Julia is available every day by default. Owner-created availability records are exceptions that block an entire date or a time range, and Julia can edit or remove them from the owner dashboard.
 
 The API calculates the booking end time from the selected database service. It rejects requests when the service is inactive, the dog belongs to another account, the time falls outside availability, a block overlaps it, or another Pending/Confirmed booking overlaps it. Creation uses a serializable PostgreSQL transaction plus an indexed date/start/end range to prevent concurrent double-booking attempts.
+
+Overnight stays are stored as one multi-day booking. By default, they reserve care from 10:00 PM to 9:00 AM plus a 2:00–3:00 PM visit on full middle days. Only those care windows block other appointments, and Julia can customize the schedule for an individual stay.
 
 ## Key endpoints
 
@@ -126,7 +159,6 @@ Tests verify that booking duration and price come from the database service and 
 - Use HTTPS and a production secret manager for database, JWT, and owner credentials.
 - Set absolute production Open Graph image URLs.
 - Add audit logging, backup policy, rate limiting, and optional email verification.
-- Replace the placeholder owner/gallery images and placeholder email with verified business assets.
 
 ## Public deployment
 
