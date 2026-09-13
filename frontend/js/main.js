@@ -15,7 +15,7 @@ if (nav) {
 }
 
 document.querySelectorAll('.brand').forEach(brand => {
-  brand.innerHTML = '<img class="brand-logo" src="assets/princess-dog-walker-logo-transparent.png" alt=""><span>Princess Dog Walker</span>';
+  brand.innerHTML = '<img class="brand-logo" src="assets/princess-dog-walker-logo-transparent.png?v=20260912-logo" alt=""><span>Princess Dog Walker</span>';
   brand.setAttribute('href', 'index.html');
   brand.setAttribute('aria-label', 'Princess Dog Walker home');
 });

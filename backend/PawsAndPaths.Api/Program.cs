@@ -94,7 +94,19 @@ app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 }));
 app.UseCors("Frontend");
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        var extension = Path.GetExtension(context.File.Name);
+        if (extension is ".html" or ".css" or ".js")
+        {
+            context.Context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+            context.Context.Response.Headers.Pragma = "no-cache";
+            context.Context.Response.Headers.Expires = "0";
+        }
+    }
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
