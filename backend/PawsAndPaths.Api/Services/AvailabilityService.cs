@@ -11,6 +11,8 @@ public interface IAvailabilityService
         CancellationToken cancellationToken, bool enforceRegularHours = true);
     Task<IReadOnlyList<AvailableSlotDto>> GetSlotsAsync(DateOnly from, DateOnly to, int serviceId, CancellationToken cancellationToken);
     Task<IReadOnlyList<PublicScheduleSegmentDto>> GetDayScheduleAsync(DateOnly date, int serviceId, CancellationToken cancellationToken);
+    Task<OvernightAvailabilityDto?> CheckOvernightAsync(
+        DateOnly checkIn, DateOnly checkout, int serviceId, CancellationToken cancellationToken);
 }
 
 public class AvailabilityService(AppDbContext db) : IAvailabilityService
@@ -135,6 +137,38 @@ public class AvailabilityService(AppDbContext db) : IAvailabilityService
         }
 
         return segments;
+    }
+
+    public async Task<OvernightAvailabilityDto?> CheckOvernightAsync(
+        DateOnly checkIn, DateOnly checkout, int serviceId, CancellationToken cancellationToken)
+    {
+        var service = await db.Services.AsNoTracking().SingleOrDefaultAsync(
+            item => item.Id == serviceId && item.IsActive && item.IsOvernightStay, cancellationToken);
+        if (service is null) return null;
+
+        var preview = new Booking
+        {
+            UserId = "availability-check",
+            ServiceOfferingId = serviceId,
+            Date = checkIn,
+            EndDate = checkout,
+            StartTime = new TimeOnly(22, 0),
+            EndTime = new TimeOnly(9, 0),
+            IsOvernightStay = true,
+            OvernightStartTime = new TimeOnly(22, 0),
+            OvernightEndTime = new TimeOnly(9, 0),
+            MiddayStartTime = new TimeOnly(14, 0),
+            MiddayEndTime = new TimeOnly(15, 0)
+        };
+        var unavailableDates = new HashSet<DateOnly>();
+        foreach (var window in BookingSchedule.Windows(preview))
+            if (!await IsAvailableAsync(window.Date, window.StartTime, window.EndTime,
+                    null, cancellationToken, false))
+                unavailableDates.Add(window.Date);
+
+        return new OvernightAvailabilityDto(
+            checkIn, checkout, unavailableDates.Count == 0,
+            unavailableDates.OrderBy(date => date).ToList());
     }
 
     private IQueryable<AvailabilityRule> RulesForDate(DateOnly date) =>

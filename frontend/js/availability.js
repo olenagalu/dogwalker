@@ -7,12 +7,21 @@ const scheduleDate = document.querySelector('#schedule-date');
 const scheduleService = document.querySelector('#schedule-service');
 const timelineList = document.querySelector('#timeline-list');
 const viewButtons = [...document.querySelectorAll('[data-calendar-view]')];
+const calendarViewControl = document.querySelector('#calendar-view-control');
+const overnightRangeForm = document.querySelector('#overnight-range-form');
+const overnightCheckIn = document.querySelector('#overnight-check-in');
+const overnightCheckout = document.querySelector('#overnight-checkout');
+const overnightRangeResult = document.querySelector('#overnight-range-result');
 const today = new Date();
 const localToday = formatIso(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
 let services = [];
 let calendarDate = parseDate(localToday);
 let selectedDate = null;
 let calendarView = 'month';
+let overnightAvailability = null;
+
+overnightCheckIn.min = localToday;
+overnightCheckout.min = localToday;
 
 initializeCalendar();
 
@@ -28,6 +37,7 @@ async function initializeCalendar() {
     }
     services.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}`, service.id)));
     serviceSelect.value = String(services[0].id);
+    toggleOvernightTools();
     await renderCalendar();
   } catch (error) {
     serviceSelect.replaceChildren(new Option('Services could not be loaded', ''));
@@ -37,8 +47,93 @@ async function initializeCalendar() {
 
 serviceSelect.addEventListener('change', () => {
   selectedDate = null;
+  overnightAvailability = null;
+  toggleOvernightTools();
   renderCalendar();
 });
+
+overnightCheckIn.addEventListener('change', () => {
+  overnightCheckout.min = overnightCheckIn.value || localToday;
+  overnightAvailability = null;
+  overnightRangeResult.hidden = true;
+});
+
+overnightRangeForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!event.currentTarget.reportValidity()) return;
+  if (overnightCheckout.value <= overnightCheckIn.value) {
+    showOvernightResult('Checkout must be after check-in.', false);
+    return;
+  }
+  const service = selectedService();
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true;
+  showOvernightResult('Checking Julia’s care schedule…', null);
+  try {
+    overnightAvailability = await PrincessApi.request(`/api/availability/overnight?checkIn=${overnightCheckIn.value}&checkout=${overnightCheckout.value}&serviceId=${service.id}`);
+    calendarDate = parseDate(overnightCheckIn.value);
+    await renderCalendar();
+    renderOvernightResult(service);
+  } catch (error) {
+    showOvernightResult(error.message, false);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+function toggleOvernightTools() {
+  const overnight = Boolean(selectedService()?.isOvernightStay);
+  overnightRangeForm.hidden = !overnight;
+  calendarViewControl.hidden = overnight;
+  document.querySelector('#availability-service-hint').textContent = overnight
+    ? 'Enter check-in and checkout dates to check the complete stay.'
+    : 'Times are calculated for the selected service length.';
+  if (overnight) {
+    calendarView = 'month';
+    viewButtons.forEach(button => {
+      const active = button.dataset.calendarView === 'month';
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    if (!overnightCheckIn.value) overnightCheckIn.value = localToday;
+    if (!overnightCheckout.value) {
+      const next = parseDate(localToday);
+      next.setDate(next.getDate() + 1);
+      overnightCheckout.value = formatIso(next);
+    }
+  } else {
+    overnightRangeResult.hidden = true;
+  }
+}
+
+function showOvernightResult(message, available) {
+  overnightRangeResult.hidden = false;
+  overnightRangeResult.className = `overnight-range-result${available === true ? ' is-available' : available === false ? ' has-conflict' : ''}`;
+  overnightRangeResult.replaceChildren(document.createTextNode(message));
+}
+
+function renderOvernightResult(service) {
+  const available = overnightAvailability.isAvailable;
+  overnightRangeResult.hidden = false;
+  overnightRangeResult.className = `overnight-range-result ${available ? 'is-available' : 'has-conflict'}`;
+  const heading = document.createElement('h3');
+  heading.textContent = available ? 'These dates are available' : 'These dates need a special request';
+  const copy = document.createElement('p');
+  copy.textContent = available
+    ? 'Julia’s standard overnight care windows are open for the full stay.'
+    : 'Some care windows overlap Julia’s current schedule. She may be able to adapt or introduce someone she trusts. You decide whether to proceed with that person or seek another option.';
+  const link = document.createElement('a');
+  link.className = 'button button-clay';
+  if (available) {
+    link.href = bookingUrl(service.id, overnightAvailability.checkIn, '', overnightAvailability.checkout);
+    link.textContent = 'Continue to booking';
+  } else {
+    const params = new URLSearchParams({ serviceId: String(service.id), checkIn: overnightAvailability.checkIn, checkout: overnightAvailability.checkout });
+    link.href = `request.html?${params}`;
+    link.textContent = 'Make a special request';
+  }
+  overnightRangeResult.replaceChildren(heading, copy, link);
+}
 
 viewButtons.forEach(button => button.addEventListener('click', () => {
   calendarView = button.dataset.calendarView;
@@ -218,10 +313,19 @@ function dateButton(date, openDates) {
   number.textContent = value.getDate();
   const status = document.createElement('span');
   const service = selectedService();
-  status.textContent = isPast ? 'Past' : service?.isOvernightStay ? 'Choose dates' : openDates.has(date) ? 'Open times' : 'View schedule';
+  const inOvernightRange = service?.isOvernightStay && overnightAvailability
+    && date >= overnightAvailability.checkIn && date <= overnightAvailability.checkout;
+  const overnightConflict = inOvernightRange && overnightAvailability.unavailableDates.includes(date);
+  if (inOvernightRange) {
+    button.classList.add(overnightConflict ? 'has-conflict' : 'has-openings', 'is-overnight-range');
+  }
+  status.textContent = isPast ? 'Past'
+    : service?.isOvernightStay
+      ? inOvernightRange ? overnightConflict ? 'Not available' : 'Available' : 'Enter dates above'
+      : openDates.has(date) ? 'Open times' : 'View schedule';
   button.append(number, status);
   button.setAttribute('aria-label', `${formatLongDate(date)}${openDates.has(date) ? ', open times available' : ''}`);
-  button.addEventListener('click', () => selectDate(date));
+  if (!service?.isOvernightStay) button.addEventListener('click', () => selectDate(date));
   return button;
 }
 
@@ -300,9 +404,10 @@ function scheduleSlot(segment, date, service) {
   return node;
 }
 
-function bookingUrl(serviceId, date, time = '') {
+function bookingUrl(serviceId, date, time = '', endDate = '') {
   const params = new URLSearchParams({ serviceId: String(serviceId), date });
   if (time) params.set('time', time);
+  if (endDate) params.set('endDate', endDate);
   return `book.html?${params}`;
 }
 

@@ -12,6 +12,7 @@ const query = new URLSearchParams(location.search);
 const now = new Date(); const today = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 dateInput.min = today; dateInput.value = query.get('date') || today;
 endDateInput.min = today;
+endDateInput.value = query.get('endDate') || '';
 
 if (bookingUser) Promise.all([PrincessApi.request('/api/services'), PrincessApi.request('/api/dogs')]).then(([serviceData, dogData]) => {
   services = serviceData; dogs = dogData;

@@ -17,3 +17,7 @@ public record AvailabilityDto(
 public record AvailableSlotDto(DateOnly Date, TimeOnly StartTime, TimeOnly EndTime);
 
 public record PublicScheduleSegmentDto(TimeOnly StartTime, string Status, bool IsBookable);
+
+public record OvernightAvailabilityDto(
+    DateOnly CheckIn, DateOnly Checkout, bool IsAvailable,
+    IReadOnlyList<DateOnly> UnavailableDates);

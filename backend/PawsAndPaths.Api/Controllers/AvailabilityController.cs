@@ -22,6 +22,18 @@ public class AvailabilityController(AppDbContext db, IAvailabilityService availa
         DateOnly date, int serviceId, CancellationToken cancellationToken) =>
         Ok(await availabilityService.GetDayScheduleAsync(date, serviceId, cancellationToken));
 
+    [HttpGet("overnight")]
+    public async Task<ActionResult<OvernightAvailabilityDto>> Overnight(
+        DateOnly checkIn, DateOnly checkout, int serviceId, CancellationToken cancellationToken)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (checkIn < today || checkout <= checkIn || checkout.DayNumber - checkIn.DayNumber > 60)
+            return BadRequest(new { message = "Choose a checkout date within 60 days after check-in." });
+        var result = await availabilityService.CheckOvernightAsync(
+            checkIn, checkout, serviceId, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
     [HttpGet, Authorize(Roles = AppRoles.Owner)]
     public async Task<ActionResult<IReadOnlyList<AvailabilityDto>>> GetRules(CancellationToken cancellationToken) =>
         Ok((await db.Availability.AsNoTracking().Where(rule => !rule.IsAvailable)

@@ -144,6 +144,33 @@ public class AvailabilityServiceTests
         Assert.True(overnightMorningAvailable);
     }
 
+    [Fact]
+    public async Task OvernightDateCheck_ReturnsOnlyConflictedDatesWithoutPrivateDetails()
+    {
+        await using var db = CreateDatabase();
+        var checkIn = DateOnly.FromDateTime(DateTime.Today.AddDays(5));
+        var service = new ServiceOffering
+        {
+            Id = 4, Name = "Overnight stay", Description = "Multi-day care",
+            DurationMinutes = 660, Price = 95m, IsActive = true, IsOvernightStay = true
+        };
+        db.Services.Add(service);
+        db.Availability.Add(new AvailabilityRule
+        {
+            SpecificDate = checkIn.AddDays(1), StartTime = new TimeOnly(14, 0),
+            EndTime = new TimeOnly(15, 0), IsAvailable = false, Notes = "Private appointment"
+        });
+        await db.SaveChangesAsync();
+
+        var result = await new AvailabilityService(db).CheckOvernightAsync(
+            checkIn, checkIn.AddDays(2), service.Id, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.False(result.IsAvailable);
+        Assert.Equal([checkIn.AddDays(1)], result.UnavailableDates);
+        Assert.DoesNotContain("Private", result.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
     private static AppDbContext CreateDatabase() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 }

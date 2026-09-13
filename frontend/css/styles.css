@@ -265,6 +265,19 @@ textarea { min-height: 105px; resize: vertical; }
 .timeline-slot.is-bookable:hover strong, .timeline-slot.is-bookable:focus-visible strong { color: white; }
 .overnight-date-choice { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem; background: #fff0f6; border-radius: 15px; }
 .overnight-date-choice p { margin: 0; }
+.overnight-range-form { display: grid; gap: 1.25rem; padding: 1.5rem; background: var(--paper); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
+.overnight-range-form h2 { margin: .25rem 0 .5rem; }
+.overnight-range-form p { margin: 0; color: var(--muted); }
+.overnight-range-fields { display: grid; grid-template-columns: repeat(2,minmax(170px,1fr)) auto; gap: 1rem; align-items: end; }
+.overnight-range-result { padding: 1.15rem; background: #fff0f6; border-radius: 14px; }
+.overnight-range-result h3 { margin-bottom: .35rem; }
+.overnight-range-result p { margin-bottom: 1rem; }
+.overnight-range-result.is-available { background: #edf8f2; border: 1px solid #b8dec9; }
+.overnight-range-result.has-conflict { background: #fff3e6; border: 1px solid #efc995; }
+.overnight-range-form[hidden], .overnight-range-result[hidden] { display: none !important; }
+.public-calendar-day.is-overnight-range { background: #edf8f2; }
+.public-calendar-day.has-conflict { background: #fff3e6; box-shadow: inset 0 0 0 2px #c27623; }
+.public-calendar-day.has-conflict span { color: #8b4d12; }
 .owner-customer-tools { align-items: start; }
 .owner-customer-card { padding: 1.2rem; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; }
 .owner-customer-card h3 { margin-bottom: .25rem; }
@@ -350,7 +363,7 @@ textarea { min-height: 105px; resize: vertical; }
   .form-aside { position: static; }
   .values, .appointment-grid { grid-template-columns: 1fr; }
   .care-alert { grid-column: auto; }
-  .schedule-shell, .contact-grid, .profile-grid, .auth-shell, .about-photo-editor { grid-template-columns: 1fr; }
+  .schedule-shell, .contact-grid, .profile-grid, .auth-shell, .about-photo-editor, .overnight-range-fields { grid-template-columns: 1fr; }
   .filter-card { position: static; }
   .dashboard-layout { grid-template-columns: 1fr; }
   .owner-booking-tools { grid-template-columns: 1fr; }
