@@ -111,8 +111,6 @@ p { margin: 0 0 1.25rem; }
 .about-photo-editor { display: grid; grid-template-columns: minmax(220px,.7fr) minmax(280px,1.3fr); gap: 2rem; align-items: start; }
 .owner-photo-preview { min-height: 320px; display: grid; place-items: center; overflow: hidden; border-radius: 24px; background: #fff0f6; color: var(--muted); text-align: center; }
 .owner-photo-preview img { width: 100%; height: 320px; object-fit: cover; }
-.values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.value { padding: 2rem; background: var(--paper); border-radius: 20px; border: 1px solid var(--line); }
 .service-list { display: grid; gap: 1rem; }
 .service-row { display: grid; grid-template-columns: 64px 1fr auto; gap: 1.5rem; align-items: center; padding: 1.5rem; border-radius: 20px; background: var(--paper); border: 1px solid var(--line); }
 .service-number { font-family: 'Fraunces', serif; color: var(--clay); font-size: 1.65rem; }
@@ -361,7 +359,7 @@ textarea { min-height: 105px; resize: vertical; }
   .hero-visual { min-height: 470px; max-width: 540px; width: 100%; margin: auto; }
   .cards { grid-template-columns: repeat(2, 1fr); }
   .form-aside { position: static; }
-  .values, .appointment-grid { grid-template-columns: 1fr; }
+  .appointment-grid { grid-template-columns: 1fr; }
   .care-alert { grid-column: auto; }
   .schedule-shell, .contact-grid, .profile-grid, .auth-shell, .about-photo-editor, .overnight-range-fields { grid-template-columns: 1fr; }
   .filter-card { position: static; }
