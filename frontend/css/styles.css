@@ -87,12 +87,8 @@ p { margin: 0 0 1.25rem; }
 .hero h1 em { color: var(--clay); font-style: normal; }
 .hero-actions { display: flex; align-items: center; gap: 1.25rem; margin-top: 2rem; flex-wrap: wrap; }
 .hero-visual { position: relative; min-height: 560px; }
-.hero-photo { position: absolute; inset: 0 0 35px 25px; overflow: hidden; border-radius: 52% 48% 42% 58% / 38% 45% 55% 62%; background: linear-gradient(145deg, #f5aac7, #c65083); box-shadow: var(--shadow); }
-.hero-photo::before { content: ''; position: absolute; inset: 10% 8% 0; background: radial-gradient(circle at 38% 25%, #f8d5a2 0 7%, transparent 7.5%), radial-gradient(circle at 62% 25%, #f8d5a2 0 7%, transparent 7.5%), radial-gradient(ellipse at 50% 54%, #f5efe2 0 31%, transparent 31.5%), radial-gradient(circle at 43% 48%, #283b34 0 3%, transparent 3.5%), radial-gradient(circle at 57% 48%, #283b34 0 3%, transparent 3.5%), radial-gradient(ellipse at 50% 59%, #3e473f 0 6%, transparent 6.5%), radial-gradient(ellipse at 50% 65%, #d97a68 0 7%, transparent 7.5%); }
-.hero-photo::after { content: 'good walks. happy tails.'; position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%) rotate(-3deg); width: 70%; color: white; font-family: 'Fraunces', serif; font-size: clamp(1.5rem, 3vw, 2.4rem); text-align: center; text-shadow: 0 2px 18px rgba(0,0,0,.22); }
-.hero-photo.logo-display { display: grid; place-items: center; overflow: visible; background: transparent; border-radius: 0; box-shadow: none; }
-.hero-photo.logo-display::before, .hero-photo.logo-display::after { content: none; }
-.hero-photo.logo-display img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 22px 30px rgba(115,45,79,.2)); }
+.hero-photo { position: absolute; inset: 0 0 35px 25px; display: grid; place-items: center; }
+.hero-photo img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 22px 30px rgba(115,45,79,.2)); }
 .sunburst { position: absolute; right: -20px; bottom: 15px; width: 110px; height: 110px; border-radius: 50%; background: #ffd1e1; z-index: -1; }
 .sunburst::before { content: '♥'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--clay-dark); font-size: 2rem; transform: rotate(-10deg); }
 
