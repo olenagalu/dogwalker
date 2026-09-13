@@ -100,6 +100,50 @@ public class AvailabilityServiceTests
         Assert.Contains(slots, item => item.Date == date && item.StartTime == new TimeOnly(10, 30));
     }
 
+    [Fact]
+    public async Task RegularServiceSlots_RunFromSixAmAndFinishByElevenPm()
+    {
+        await using var db = CreateDatabase();
+        var date = DateOnly.FromDateTime(DateTime.Today.AddDays(5));
+        var service = new ServiceOffering
+        {
+            Id = 1, Name = "Drop-in visit", Description = "Pet care",
+            DurationMinutes = 30, Price = 22m, IsActive = true
+        };
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var availability = new AvailabilityService(db);
+        var slots = await availability.GetSlotsAsync(date, date, service.Id, CancellationToken.None);
+        var schedule = await availability.GetDayScheduleAsync(date, service.Id, CancellationToken.None);
+
+        Assert.Equal(new TimeOnly(6, 0), slots.First().StartTime);
+        Assert.Equal(new TimeOnly(22, 30), slots.Last().StartTime);
+        Assert.False(schedule.Single(item => item.StartTime == new TimeOnly(5, 30)).IsBookable);
+        Assert.True(schedule.Single(item => item.StartTime == new TimeOnly(6, 0)).IsBookable);
+        Assert.True(schedule.Single(item => item.StartTime == new TimeOnly(22, 30)).IsBookable);
+        Assert.False(schedule.Single(item => item.StartTime == new TimeOnly(23, 0)).IsBookable);
+    }
+
+    [Fact]
+    public async Task OvernightCareWindows_CanRunOutsideRegularHours()
+    {
+        await using var db = CreateDatabase();
+        var date = DateOnly.FromDateTime(DateTime.Today.AddDays(5));
+        var availability = new AvailabilityService(db);
+
+        var regularAvailable = await availability.IsAvailableAsync(
+            date, new TimeOnly(23, 0), new TimeOnly(23, 30), null, CancellationToken.None);
+        var overnightAvailable = await availability.IsAvailableAsync(
+            date, new TimeOnly(23, 0), new TimeOnly(23, 30), null, CancellationToken.None, false);
+        var overnightMorningAvailable = await availability.IsAvailableAsync(
+            date, TimeOnly.MinValue, new TimeOnly(9, 0), null, CancellationToken.None, false);
+
+        Assert.False(regularAvailable);
+        Assert.True(overnightAvailable);
+        Assert.True(overnightMorningAvailable);
+    }
+
     private static AppDbContext CreateDatabase() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 }

@@ -75,8 +75,8 @@ public class AvailabilityController(AppDbContext db, IAvailabilityService availa
         rule.SpecificDate = request.SpecificDate;
         rule.StartTime = request.StartTime;
         rule.EndTime = request.EndTime;
-        // The business is available 24/7 by default, so persisted rules are
-        // owner-created exceptions that mark time as unavailable.
+        // Persisted rules are owner-created exceptions that remove additional
+        // time from the normal 6 AM–11 PM schedule and overnight care windows.
         rule.IsAvailable = false;
         rule.Notes = request.Notes?.Trim() ?? string.Empty;
     }

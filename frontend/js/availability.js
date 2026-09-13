@@ -82,8 +82,10 @@ async function renderCalendar() {
     }
 
     const dates = datesBetween(range.from, range.to);
-    const schedules = await Promise.all(dates.map(date =>
-      PrincessApi.request(`/api/availability/day?date=${date}&serviceId=${service.id}`)));
+    const schedules = service.isOvernightStay
+      ? dates.map(() => [])
+      : await Promise.all(dates.map(date =>
+        PrincessApi.request(`/api/availability/day?date=${date}&serviceId=${service.id}`)));
     renderWeekSchedule(dates, schedules, service);
   } catch (error) {
     calendarGrid.replaceChildren(empty(error.message));
@@ -131,14 +133,14 @@ function renderWeekSchedule(dates, schedules, service) {
 
     const label = document.createElement('p');
     label.className = 'week-taken-label';
-    label.textContent = 'Taken times';
+    label.textContent = service.isOvernightStay ? 'Overnight care' : 'Taken times';
     const takenList = document.createElement('div');
     takenList.className = 'week-taken-list';
     const ranges = summarizeTakenTimes(segments);
     if (!ranges.length) {
       const open = document.createElement('span');
       open.className = 'week-all-open';
-      open.textContent = 'No times taken';
+      open.textContent = service.isOvernightStay ? 'Choose check-in' : 'No times taken';
       takenList.append(open);
     } else {
       ranges.forEach(range => takenList.append(takenTime(range)));

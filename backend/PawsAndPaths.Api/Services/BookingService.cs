@@ -53,7 +53,7 @@ public class BookingService(AppDbContext db, IAvailabilityService availability) 
                 MiddayStartTime = middayStart, MiddayEndTime = middayEnd
             };
             foreach (var window in BookingSchedule.Windows(preview))
-                if (!await availability.IsAvailableAsync(window.Date, window.StartTime, window.EndTime, null, cancellationToken))
+                if (!await availability.IsAvailableAsync(window.Date, window.StartTime, window.EndTime, null, cancellationToken, false))
                     return (null, $"Overnight care conflicts with another booking or blocked time on {window.Date:MMM d}.");
             end = overnightEnd;
         }
@@ -98,7 +98,7 @@ public class BookingService(AppDbContext db, IAvailabilityService availability) 
         booking.MiddayStartTime = request.MiddayStartTime;
         booking.MiddayEndTime = request.MiddayEndTime;
         foreach (var window in BookingSchedule.Windows(booking))
-            if (!await availability.IsAvailableAsync(window.Date, window.StartTime, window.EndTime, booking.Id, cancellationToken))
+            if (!await availability.IsAvailableAsync(window.Date, window.StartTime, window.EndTime, booking.Id, cancellationToken, false))
             {
                 (booking.OvernightStartTime, booking.OvernightEndTime, booking.MiddayStartTime, booking.MiddayEndTime) = previous;
                 return (null, $"The new overnight schedule conflicts on {window.Date:MMM d}.");
@@ -120,7 +120,7 @@ public class BookingService(AppDbContext db, IAvailabilityService availability) 
         if (status == BookingStatus.Confirmed)
         {
             foreach (var window in BookingSchedule.Windows(booking))
-                if (!await availability.IsAvailableAsync(window.Date, window.StartTime, window.EndTime, booking.Id, cancellationToken))
+                if (!await availability.IsAvailableAsync(window.Date, window.StartTime, window.EndTime, booking.Id, cancellationToken, !booking.IsOvernightStay))
                     return (null, "This booking now conflicts with availability or another active booking.");
         }
 
