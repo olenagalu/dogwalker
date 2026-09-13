@@ -275,8 +275,9 @@ textarea { min-height: 105px; resize: vertical; }
 .field[hidden], .overnight-default-note[hidden], .overnight-schedule-fields[hidden], .panel-form[hidden] { display: none !important; }
 .contact-card .footer-links { gap: 1.25rem; }
 .contact-card a { color: var(--forest); }
-.contact-intro { color: var(--ink); font-size: clamp(2rem, 4vw, 3.5rem); letter-spacing: -.035em; }
-.contact-map-card { position: relative; min-height: 430px; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+.contact-grid { align-items: stretch; }
+.contact-intro { color: var(--ink); font-size: clamp(1.65rem, 2.4vw, 2.25rem); line-height: 1.2; letter-spacing: -.025em; }
+.contact-map-card { position: relative; height: 100%; min-height: 430px; overflow: hidden; background: var(--paper); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
 .contact-map-card iframe { display: block; width: 100%; height: 100%; min-height: 430px; border: 0; pointer-events: none; }
 .contact-map-link { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 1.25rem; color: var(--forest); text-decoration: none; }
 .contact-map-link > span { padding: .8rem 1.1rem; background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); font-weight: 800; }
