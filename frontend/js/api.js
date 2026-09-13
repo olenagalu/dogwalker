@@ -6,7 +6,8 @@ const PrincessApi = (() => {
 
   async function request(path, options = {}) {
     const token = sessionStorage.getItem(tokenKey);
-    const headers = { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...options.headers };
+    const isFormData = options.body instanceof FormData;
+    const headers = { ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}), ...options.headers };
     if (token) headers.Authorization = `Bearer ${token}`;
     const response = await fetch(`${baseUrl}${path}`, { ...options, headers });
     const body = response.status === 204 ? null : await response.json().catch(() => ({}));

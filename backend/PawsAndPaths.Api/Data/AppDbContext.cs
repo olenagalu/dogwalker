@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<AvailabilityRule> Availability => Set<AvailabilityRule>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
+    public DbSet<SiteContent> SiteContent => Set<SiteContent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +53,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             new ServiceOffering { Id = 1, Name = "30-minute dog walk", Description = "A focused neighborhood walk with time to sniff, move, and reset.", DurationMinutes = 30, Price = 24m, IsActive = true },
             new ServiceOffering { Id = 2, Name = "60-minute dog walk", Description = "A longer, enriching outing for active dogs who need extra exercise.", DurationMinutes = 60, Price = 38m, IsActive = true },
             new ServiceOffering { Id = 3, Name = "Drop-in visit", Description = "Food, fresh water, playtime, medication support, and a reassuring check-in.", DurationMinutes = 30, Price = 22m, IsActive = true },
-            new ServiceOffering { Id = 4, Name = "Puppy visit", Description = "A gentle potty, play, feeding, and routine-building visit for young pups.", DurationMinutes = 30, Price = 26m, IsActive = true });
+            new ServiceOffering { Id = 4, Name = "Overnight stay", Description = "Overnight companionship with morning care, a midday visit, and evening care. Times can be customized for each stay.", DurationMinutes = 660, Price = 95m, IsActive = true, IsOvernightStay = true });
     }
 }

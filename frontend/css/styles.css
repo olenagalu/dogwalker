@@ -106,6 +106,11 @@ p { margin: 0 0 1.25rem; }
 .portrait-placeholder::after { content: '♥  ✦'; position: absolute; top: 12%; right: 10%; color: white; font-size: 2rem; letter-spacing: .35rem; transform: rotate(10deg); }
 .portrait-placeholder::before { content: 'JR'; position: absolute; inset: 0; display: grid; place-items: center; color: rgba(255,255,255,.68); font-family: 'Fraunces', serif; font-size: 9rem; }
 .portrait-label { position: absolute; inset: auto 1rem 1rem; background: rgba(255,255,255,.9); padding: 1rem; border-radius: 16px; text-align: center; font-weight: 700; }
+.portrait-placeholder.has-photo::before { display: none; }
+.about-owner-photo { width: 100%; height: 100%; min-height: 610px; object-fit: cover; }
+.about-photo-editor { display: grid; grid-template-columns: minmax(220px,.7fr) minmax(280px,1.3fr); gap: 2rem; align-items: start; }
+.owner-photo-preview { min-height: 320px; display: grid; place-items: center; overflow: hidden; border-radius: 24px; background: #fff0f6; color: var(--muted); text-align: center; }
+.owner-photo-preview img { width: 100%; height: 320px; object-fit: cover; }
 .values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 .value { padding: 2rem; background: var(--paper); border-radius: 20px; border: 1px solid var(--line); }
 .service-list { display: grid; gap: 1rem; }
@@ -345,7 +350,7 @@ textarea { min-height: 105px; resize: vertical; }
   .form-aside { position: static; }
   .values, .appointment-grid { grid-template-columns: 1fr; }
   .care-alert { grid-column: auto; }
-  .schedule-shell, .contact-grid, .profile-grid, .auth-shell { grid-template-columns: 1fr; }
+  .schedule-shell, .contact-grid, .profile-grid, .auth-shell, .about-photo-editor { grid-template-columns: 1fr; }
   .filter-card { position: static; }
   .dashboard-layout { grid-template-columns: 1fr; }
   .owner-booking-tools { grid-template-columns: 1fr; }
@@ -375,6 +380,7 @@ textarea { min-height: 105px; resize: vertical; }
   .service-row { grid-template-columns: 44px 1fr; }
   .service-price { grid-column: 2; }
   .portrait-placeholder { min-height: 450px; }
+  .about-owner-photo { min-height: 450px; }
   .slot-grid { grid-template-columns: 1fr 1fr; }
   .year-grid { grid-template-columns: 1fr 1fr; }
   .review-card dl { grid-template-columns: 1fr; }

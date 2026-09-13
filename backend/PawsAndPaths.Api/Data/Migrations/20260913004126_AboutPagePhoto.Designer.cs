@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PawsAndPaths.Api.Data;
@@ -11,9 +12,11 @@ using PawsAndPaths.Api.Data;
 namespace PawsAndPaths.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260913004126_AboutPagePhoto")]
+    partial class AboutPagePhoto
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -483,12 +486,12 @@ namespace PawsAndPaths.Api.Data.Migrations
                         new
                         {
                             Id = 4,
-                            Description = "Overnight companionship with morning care, a midday visit, and evening care. Times can be customized for each stay.",
-                            DurationMinutes = 660,
+                            Description = "A gentle potty, play, feeding, and routine-building visit for young pups.",
+                            DurationMinutes = 30,
                             IsActive = true,
-                            IsOvernightStay = true,
-                            Name = "Overnight stay",
-                            Price = 95m
+                            IsOvernightStay = false,
+                            Name = "Puppy visit",
+                            Price = 26m
                         });
                 });
 

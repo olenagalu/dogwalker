@@ -232,7 +232,9 @@ async function selectDate(date) {
   scheduleDate.textContent = formatLongDate(date);
   timelineList.innerHTML = '<div class="empty-state">Checking this day…</div>';
   const service = selectedService();
-  scheduleService.textContent = `${service.name} · ${service.durationMinutes} minutes`;
+  scheduleService.textContent = service.isOvernightStay
+    ? `${service.name} · Multi-day overnight care`
+    : `${service.name} · ${service.durationMinutes} minutes`;
 
   if (service.isOvernightStay) {
     const card = document.createElement('div');
