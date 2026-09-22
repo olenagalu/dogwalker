@@ -172,7 +172,6 @@ textarea { min-height: 105px; resize: vertical; }
 .calendar-day-number { display: block; margin-bottom: .35rem; color: var(--muted); font-size: .72rem; font-weight: 800; }
 .owner-calendar-event { display: block; width: 100%; margin-bottom: .3rem; padding: .35rem .4rem; overflow: hidden; color: #472238; background: color-mix(in srgb, var(--booking-color) 24%, white); border-left: 4px solid var(--booking-color); border-radius: 6px; font-size: .66rem; font-weight: 700; line-height: 1.25; text-overflow: ellipsis; }
 .owner-list-heading { margin: 0 0 1rem; }
-.owner-message-heading { margin-top: 2.25rem; }
 .owner-request-inbox { margin-top: 1rem; }
 .request-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .85rem; margin-top: 1rem; }
 .request-actions .button { padding: .7rem 1rem; text-decoration: none; }

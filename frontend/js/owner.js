@@ -19,16 +19,11 @@ aboutPhotoForm.addEventListener('submit',async event=>{event.preventDefault();if
 document.querySelector('#refresh-owner').addEventListener('click',loadOwner);
 async function loadOwner(){try{await loadBookings();await Promise.all([loadServices(),loadRules(),loadCustomers(),loadRequests(),loadPublicContent()]);renderOwnerCalendar();renderOvernightCalendar();}catch(error){feedback(error.message,'error');}}
 async function loadRequests(){
-  const requests=await PrincessApi.request('/api/contact');
   const bookingList=document.querySelector('#owner-booking-request-list');
   bookingList.replaceChildren();
   const pending=ownerBookings.filter(item=>item.status==='Pending').sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
   if(!pending.length)bookingList.append(empty('No booking requests are waiting for approval.'));
   pending.forEach(item=>bookingList.append(bookingRequestCard(item)));
-  const list=document.querySelector('#owner-request-list');
-  list.replaceChildren();
-  if(!requests.length)return list.append(empty('No contact messages yet.'));
-  requests.forEach(request=>{const card=mini(`${request.name} · ${request.email}`,request.message);const received=document.createElement('p');received.className='hint';received.textContent=`Received ${new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeStyle:'short'}).format(new Date(request.createdAt))}`;const reply=document.createElement('a');reply.className='link-button';reply.href=`mailto:${request.email}`;reply.textContent='Reply by email';card.append(received,reply);list.append(card);});
 }
 function bookingRequestCard(item){
   const card=ownerBookingCard(item,false);
