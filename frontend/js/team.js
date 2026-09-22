@@ -75,7 +75,7 @@ function ensureTeamEditor() {
     <div class="field"><label for="inline-team-name">Name</label><input id="inline-team-name" maxlength="120" required></div>
     <div class="field"><label for="inline-team-role">Role</label><input id="inline-team-role" maxlength="120"></div>
     <div class="field"><label for="inline-team-bio">Description</label><textarea id="inline-team-bio" maxlength="1500"></textarea></div>
-    <div class="field"><label for="inline-team-photo">New photo (optional)</label><input type="file" id="inline-team-photo" accept="image/jpeg,image/png,image/webp"><span class="hint">Leave empty to keep the current photo.</span></div>
+    <div class="field"><label for="inline-team-photo">New photo (optional)</label><input type="file" id="inline-team-photo" accept="image/jpeg,image/png,image/webp"><span class="hint">Large photos are resized automatically. Leave empty to keep the current photo.</span></div>
     <div class="owner-dialog-actions"><button class="button button-clay" type="submit">Save team member</button><span class="form-status" role="status"></span></div>
   </form>`;
   document.body.append(teamEditor);
@@ -103,9 +103,10 @@ async function saveTeamMember(event) {
   data.append('name', teamEditor.querySelector('#inline-team-name').value);
   data.append('role', teamEditor.querySelector('#inline-team-role').value);
   data.append('bio', teamEditor.querySelector('#inline-team-bio').value);
-  const photo = teamEditor.querySelector('#inline-team-photo').files[0]; if (photo) data.append('photo', photo);
   const status = teamEditor.querySelector('.form-status');
   try {
+    const photo = teamEditor.querySelector('#inline-team-photo').files[0];
+    if (photo) { status.textContent = 'Preparing photo…'; status.className = 'form-status'; data.append('photo', await PrincessApi.uploadReadyImage(photo)); }
     await PrincessApi.request(`/api/team${id ? `/${id}` : ''}`, { method:id ? 'PUT' : 'POST', body:data });
     status.textContent = 'Saved.'; status.className = 'form-status success';
     await loadTeam(); setTimeout(() => teamEditor.close(), 400);

@@ -12,7 +12,7 @@ const PrincessApi = (() => {
     const response = await fetch(`${baseUrl}${path}`, { ...options, headers });
     const body = response.status === 204 ? null : await response.json().catch(() => ({}));
     if (!response.ok) {
-      const message = body?.message || body?.title || (body?.errors && Object.values(body.errors).flat().join(' ')) || 'The request could not be completed.';
+      const message = body?.message || (body?.errors && Object.values(body.errors).flat().join(' ')) || body?.title || 'The request could not be completed.';
       const error = new Error(message);
       error.status = response.status;
       throw error;
@@ -27,6 +27,28 @@ const PrincessApi = (() => {
     });
     if (!response.ok) throw new Error('The private photo could not be loaded.');
     return URL.createObjectURL(await response.blob());
+  }
+
+  async function uploadReadyImage(file) {
+    const maximumBytes = 2 * 1024 * 1024;
+    if (!file || file.size <= maximumBytes) return file;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
+      throw new Error('Use a JPEG, PNG, or WebP photo.');
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close?.();
+      for (const quality of [.86, .74, .62]) {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+        if (blob && blob.size <= maximumBytes)
+          return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type:'image/jpeg' });
+      }
+    } catch { /* Show the clear size message below instead of browser internals. */ }
+    throw new Error('This photo is too large to prepare. Please choose a smaller photo.');
   }
 
   function setSession(response) {
@@ -55,5 +77,5 @@ const PrincessApi = (() => {
     return current;
   }
 
-  return { request, privateImageUrl, setSession, user, signOut, requireUser };
+  return { request, privateImageUrl, uploadReadyImage, setSession, user, signOut, requireUser };
 })();
