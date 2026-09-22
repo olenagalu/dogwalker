@@ -44,7 +44,7 @@ The public catalog loads active services and prices from the API. From the prote
 3. The browser presents a final review, but the API independently validates the service, dog ownership, price, duration, blocks, and booking conflicts before saving anything.
 4. Customer requests begin as **Pending**. Julia can confirm, decline, complete, or cancel them from the owner dashboard, and the customer sees the current status in their dashboard.
 
-The owner dashboard also provides a color-coded booking calendar, customer-assisted booking, availability blocks, service management, customer approvals, gallery publishing, and team publishing. All owner operations are protected by server-side role authorization.
+The owner dashboard also provides a color-coded booking calendar, customer-assisted booking, availability blocks, service management, customer approvals, and team publishing. All owner operations are protected by server-side role authorization.
 
 ## Built with
 

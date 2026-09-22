@@ -143,6 +143,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+app.MapGet("/gallery.html", () => Results.NotFound());
+app.MapGet("/gallery", () => Results.NotFound());
+app.Map("/api/{**path}", () => Results.NotFound(new { message = "API endpoint not found." }));
 app.MapFallbackToFile("index.html");
 app.Run();
 
