@@ -15,7 +15,9 @@ namespace PawsAndPaths.Api.Controllers;
 public class UsersController(
     AppDbContext db,
     UserManager<AppUser> userManager,
-    ICustomerManagementService customerManagementService) : ControllerBase
+    ICustomerManagementService customerManagementService,
+    IAccountDecisionEmailSender accountDecisionEmailSender,
+    ILogger<UsersController> logger) : ControllerBase
 {
     [HttpGet("me")]
     public async Task<ActionResult<UserProfileDto>> Me()
@@ -79,7 +81,8 @@ public class UsersController(
     }
 
     [HttpPut("customers/{id}/approval"), Authorize(Roles = AppRoles.Owner)]
-    public async Task<IActionResult> UpdateApproval(string id, UpdateApprovalDto request)
+    public async Task<IActionResult> UpdateApproval(string id, UpdateApprovalDto request,
+        CancellationToken cancellationToken)
     {
         if (request.Status == AccountApprovalStatus.Pending)
             return BadRequest(new { message = "Choose Approved or Declined." });
@@ -88,8 +91,24 @@ public class UsersController(
         if (request.Status == AccountApprovalStatus.Approved
             && (string.IsNullOrWhiteSpace(customer.ServiceArea) || string.IsNullOrWhiteSpace(customer.ServiceAddress)))
             return Conflict(new { message = "The customer must provide a service area and address before approval." });
+        var sendDeclinedEmail = request.Status == AccountApprovalStatus.Declined
+            && customer.ApprovalStatus != AccountApprovalStatus.Declined;
         customer.ApprovalStatus = request.Status;
-        await userManager.UpdateAsync(customer);
+        var update = await userManager.UpdateAsync(customer);
+        if (!update.Succeeded) return BadRequest(update.Errors);
+        if (sendDeclinedEmail && !string.IsNullOrWhiteSpace(customer.Email))
+        {
+            try
+            {
+                await accountDecisionEmailSender.SendDeclinedAsync(
+                    customer.Email, customer.FullName, cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception,
+                    "Declined-account email could not be sent for user {UserId}.", customer.Id);
+            }
+        }
         return NoContent();
     }
 

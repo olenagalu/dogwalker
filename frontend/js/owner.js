@@ -95,11 +95,11 @@ async function loadCustomers(){
     });
     card.append(title,approval,contact,dogList);
     if(customer.approvalStatus!=='Approved')card.append(action('Approve service area',()=>updateApproval(customer.id,'Approved')));
-    if(customer.approvalStatus!=='Declined')card.append(action('Decline',()=>updateApproval(customer.id,'Declined'),'danger'));
+    if(customer.approvalStatus!=='Declined')card.append(action('Decline & email customer',()=>updateApproval(customer.id,'Declined'),'danger'));
     list.append(card);
   });
 }
-async function updateApproval(id,status){try{await PrincessApi.request(`/api/users/customers/${id}/approval`,{method:'PUT',body:JSON.stringify({status})});await loadCustomers();feedback(`Customer account ${status.toLowerCase()}.`,'success');}catch(error){feedback(error.message,'error');}}
+async function updateApproval(id,status){if(status==='Declined'&&!confirm('Decline this account and email the customer?'))return;try{await PrincessApi.request(`/api/users/customers/${id}/approval`,{method:'PUT',body:JSON.stringify({status})});await loadCustomers();feedback(status==='Declined'?'Customer declined and notification email sent.':`Customer account ${status.toLowerCase()}.`,'success');}catch(error){feedback(error.message,'error');}}
 
 const ownerCustomerForm=document.querySelector('#owner-customer-form');
 const ownerDogFields=ownerCustomerForm.querySelector('.form-grid');

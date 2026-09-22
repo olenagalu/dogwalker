@@ -87,6 +87,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IWelcomeEmailSender, WelcomeEmailSender>();
 builder.Services.AddScoped<IPasswordResetEmailSender, PasswordResetEmailSender>();
+builder.Services.AddScoped<IAccountDecisionEmailSender, AccountDecisionEmailSender>();
 builder.Services.AddScoped<IOwnerNotificationEmailSender, OwnerNotificationEmailSender>();
 builder.Services.AddScoped<ICustomerManagementService, CustomerManagementService>();
 builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
@@ -145,6 +146,8 @@ app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
 app.MapGet("/gallery.html", () => Results.NotFound());
 app.MapGet("/gallery", () => Results.NotFound());
+app.MapGet("/about.html", () => Results.NotFound());
+app.MapGet("/about", () => Results.NotFound());
 app.Map("/api/{**path}", () => Results.NotFound(new { message = "API endpoint not found." }));
 app.MapFallbackToFile("index.html");
 app.Run();

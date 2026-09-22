@@ -13,3 +13,18 @@ PrincessApi.request('/api/services').then(services => {
     homeServices.append(card);
   });
 }).catch(() => { homeServices.innerHTML = '<div class="empty-state">Services will appear here when the booking service is running.</div>'; });
+
+const ownerPhoto = document.querySelector('.about-owner-photo');
+if (ownerPhoto) {
+  const showOwnerPhoto = () => {
+    ownerPhoto.hidden = false;
+    ownerPhoto.parentElement.classList.add('has-photo');
+  };
+  const hideOwnerPhoto = () => {
+    ownerPhoto.hidden = true;
+    ownerPhoto.parentElement.classList.remove('has-photo');
+  };
+  ownerPhoto.addEventListener('load', showOwnerPhoto);
+  ownerPhoto.addEventListener('error', hideOwnerPhoto);
+  if (ownerPhoto.complete) ownerPhoto.naturalWidth > 0 ? showOwnerPhoto() : hideOwnerPhoto();
+}
