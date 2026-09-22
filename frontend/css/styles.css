@@ -481,7 +481,24 @@ textarea { min-height: 105px; resize: vertical; }
 .owner-team-preview { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .owner-team-card { align-self:start; }
 .owner-team-card .link-button { margin-top:.75rem; }
+.owner-inline-controls { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:1rem; margin-bottom:1rem; padding:.75rem 1rem; background:#fff7fa; border:1px dashed #d99ab7; border-radius:12px; }
+.owner-inline-controls::before { content:'Owner editing'; margin-right:auto; color:var(--muted); font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.owner-inline-controls[data-message]::after { content:attr(data-message); color:var(--forest); font-size:.75rem; font-weight:700; }
+.owner-inline-edit { padding:.2rem 0; color:var(--forest); background:transparent; border:0; font:inherit; font-size:.82rem; font-weight:800; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
+.owner-inline-edit:hover,.owner-inline-edit:focus-visible { color:#a8325d; }
+.owner-inline-edit.danger { color:#a8325d; }
+.owner-card-controls { display:flex; flex-wrap:wrap; gap:1rem; margin-top:1rem; padding-top:.85rem; border-top:1px solid var(--line); }
+.owner-team-toolbar { grid-column:1 / -1; margin:0; }
+.owner-edit-dialog { width:min(820px,calc(100% - 2rem)); max-height:90vh; padding:0; overflow:auto; background:var(--paper); border:1px solid var(--line); border-radius:22px; box-shadow:0 30px 90px rgba(77,38,61,.25); }
+.owner-edit-dialog::backdrop { background:rgba(50,25,39,.55); backdrop-filter:blur(3px); }
+.owner-inline-form { border:0; box-shadow:none; }
+.owner-dialog-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+.owner-dialog-heading h2 { margin:.15rem 0 0; }
+.owner-dialog-close { width:38px; height:38px; flex:0 0 auto; color:var(--forest); background:#fff0f6; border:0; border-radius:50%; font-size:1.5rem; cursor:pointer; }
+.owner-dialog-actions { display:flex; align-items:center; gap:1rem; }
+.owner-dialog-actions .form-status { margin:0; flex:1; }
 
 @media (max-width:900px){.dashboard-owner-intro,.dashboard-owner-card,.owner-team-layout { grid-template-columns:1fr; }.dashboard-owner-card img { width:100%; height:300px; }.public-content-list,.team-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }}
 @media (max-width:600px){.team-grid,.owner-team-preview { grid-template-columns:1fr; }}
 @media (max-width:600px){.home-owner-contact { grid-template-columns:1fr; }}
+@media (max-width:600px){.owner-inline-controls { align-items:flex-start; flex-direction:column; }.owner-inline-controls::before { margin-right:0; }.owner-dialog-actions { align-items:stretch; flex-direction:column; }.owner-dialog-actions .button { width:100%; }}

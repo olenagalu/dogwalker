@@ -4,7 +4,11 @@ const nav = document.querySelector('.nav-links');
 
 if (nav) {
   if (currentUser?.role === 'Owner') {
-    nav.innerHTML = '<a href="index.html">Home</a><a href="owner.html">Owner Dashboard</a><button class="nav-signout" type="button">Sign out</button>';
+    nav.innerHTML = `
+      <a href="index.html">Home</a><a href="services.html">Services</a>
+      <a href="availability.html">Availability</a><a href="team.html">Our Team</a>
+      <a href="contact.html">Contact</a><a href="owner.html">Owner Dashboard</a>
+      <button class="nav-signout" type="button">Sign out</button>`;
   } else {
     const accountLink = currentUser
       ? '<a href="dashboard.html">Dashboard</a><button class="nav-signout" type="button">Sign out</button>'

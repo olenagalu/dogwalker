@@ -30,8 +30,8 @@ public class TeamController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> Create([FromForm] string name, [FromForm] string? role,
         [FromForm] string? bio, [FromForm] IFormFile? photo, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(name) || name.Length > 120 || (bio?.Length ?? 0) > 1500)
-            return BadRequest(new { message = "Enter a name and keep the biography under 1,500 characters." });
+        if (!Valid(name, role, bio))
+            return BadRequest(new { message = "Enter a name and keep the role and biography within their limits." });
         var member = new TeamMember { Name = name.Trim(), Role = (role ?? string.Empty).Trim(), Bio = (bio ?? string.Empty).Trim() };
         if (photo is not null)
         {
@@ -40,6 +40,28 @@ public class TeamController(AppDbContext db) : ControllerBase
             member.PhotoData = upload.Data!; member.PhotoContentType = upload.ContentType!;
         }
         db.TeamMembers.Add(member);
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { member.Id, member.Name, member.Role, member.Bio, HasPhoto = member.PhotoData.Length > 0 });
+    }
+
+    [HttpPut("{id:int}"), Authorize(Roles = AppRoles.Owner), RequestSizeLimit(ImageUpload.MaximumBytes + 65536)]
+    public async Task<IActionResult> Update(int id, [FromForm] string name, [FromForm] string? role,
+        [FromForm] string? bio, [FromForm] IFormFile? photo, CancellationToken cancellationToken)
+    {
+        if (!Valid(name, role, bio))
+            return BadRequest(new { message = "Enter a name and keep the role and biography within their limits." });
+        var member = await db.TeamMembers.FindAsync([id], cancellationToken);
+        if (member is null) return NotFound();
+        member.Name = name.Trim();
+        member.Role = (role ?? string.Empty).Trim();
+        member.Bio = (bio ?? string.Empty).Trim();
+        if (photo is not null)
+        {
+            var upload = await ImageUpload.ReadAsync(photo, cancellationToken);
+            if (upload.Error is not null) return BadRequest(new { message = upload.Error });
+            member.PhotoData = upload.Data!;
+            member.PhotoContentType = upload.ContentType!;
+        }
         await db.SaveChangesAsync(cancellationToken);
         return Ok(new { member.Id, member.Name, member.Role, member.Bio, HasPhoto = member.PhotoData.Length > 0 });
     }
@@ -53,4 +75,8 @@ public class TeamController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync(cancellationToken);
         return NoContent();
     }
+
+    private static bool Valid(string name, string? role, string? bio) =>
+        !string.IsNullOrWhiteSpace(name) && name.Length <= 120
+        && (role?.Length ?? 0) <= 120 && (bio?.Length ?? 0) <= 1500;
 }

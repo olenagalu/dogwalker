@@ -80,7 +80,7 @@ function destination(user) {
   const safeLocalPage = /^[a-z0-9-]+\.html(?:\?[^#]*)?(?:#.*)?$/i;
   return requested && safeLocalPage.test(requested)
     ? requested
-    : (user.role === 'Owner' ? 'owner.html' : 'dashboard.html');
+    : (user.role === 'Owner' ? 'index.html' : 'dashboard.html');
 }
 
 document.querySelector('#login-panel').addEventListener('submit', async event => {
