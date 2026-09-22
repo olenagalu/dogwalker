@@ -5,6 +5,7 @@ let dogs = [];
 let bookings = [];
 
 initializePanels();
+document.querySelector('#dog-photo').nextElementSibling.textContent = 'Large photos are resized automatically. For a new dog, save first and then edit to add the photo.';
 if (dashboardUser) {
   document.querySelector('#dashboard-greeting').textContent = `Welcome back, ${dashboardUser.fullName.split(' ')[0]}.`;
   loadAll();
@@ -113,8 +114,8 @@ document.querySelector('#profile-form').addEventListener('submit', async event =
   event.preventDefault(); try { const user = await PrincessApi.request('/api/users/me', { method:'PUT', body:JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) }); sessionStorage.setItem('princessDogWalkerUser', JSON.stringify(user)); await loadProfile(); feedback('Personal information saved. Julia will review updated service areas.', 'success'); } catch (error) { feedback(error.message, 'error'); }
 });
 document.querySelector('#profile-photo-form').addEventListener('submit', async event => {
-  event.preventDefault(); const data = new FormData(); data.append('photo', document.querySelector('#profile-photo').files[0]);
-  try { await PrincessApi.request('/api/users/me/photo', { method:'PUT', body:data }); event.currentTarget.reset(); await loadProfile(); feedback('Profile photo updated.', 'success'); } catch (error) { feedback(error.message, 'error'); }
+  event.preventDefault(); const data = new FormData();
+  try { feedback('Preparing photo…', ''); data.append('photo', await PrincessApi.uploadReadyImage(document.querySelector('#profile-photo').files[0])); await PrincessApi.request('/api/users/me/photo', { method:'PUT', body:data }); event.currentTarget.reset(); await loadProfile(); feedback('Profile photo updated.', 'success'); } catch (error) { feedback(error.message, 'error'); }
 });
 document.querySelector('#request-code-form').addEventListener('submit', async event => { event.preventDefault(); await requestResetCode(); });
 document.querySelector('#resend-reset-code').addEventListener('click', requestResetCode);
@@ -132,7 +133,7 @@ document.querySelector('#reset-password-form').addEventListener('submit', async 
 });
 document.querySelector('#dog-form').addEventListener('submit', async event => {
   event.preventDefault(); const id = document.querySelector('#dog-id').value; const data = Object.fromEntries(new FormData(event.currentTarget)); data.age = data.age ? Number(data.age) : null;
-  try { const dog = await PrincessApi.request(`/api/dogs${id ? `/${id}` : ''}`, { method:id ? 'PUT' : 'POST', body:JSON.stringify(data) }); const photo = document.querySelector('#dog-photo').files[0]; if (photo) { const upload = new FormData(); upload.append('photo', photo); await PrincessApi.request(`/api/dogs/${dog.id}/photo`, { method:'PUT', body:upload }); } clearDogForm(); await loadDogs(); feedback('Dog profile saved.', 'success'); } catch (error) { feedback(error.message, 'error'); }
+  try { const dog = await PrincessApi.request(`/api/dogs${id ? `/${id}` : ''}`, { method:id ? 'PUT' : 'POST', body:JSON.stringify(data) }); const photo = document.querySelector('#dog-photo').files[0]; if (photo) { feedback('Preparing dog photo…', ''); const upload = new FormData(); upload.append('photo', await PrincessApi.uploadReadyImage(photo)); await PrincessApi.request(`/api/dogs/${dog.id}/photo`, { method:'PUT', body:upload }); } clearDogForm(); await loadDogs(); feedback('Dog profile saved.', 'success'); } catch (error) { feedback(error.message, 'error'); }
 });
 document.querySelector('#clear-dog-form').addEventListener('click', clearDogForm);
 function editDog(dog) { showPanel('dogs'); document.querySelector('#dog-id').value = dog.id; document.querySelector('#dog-form-title').textContent = `Edit ${dog.name}`; document.querySelector('#dog-name').value = dog.name; document.querySelector('#dog-breed').value = dog.breed; document.querySelector('#dog-age').value = dog.age ?? ''; document.querySelector('#dog-care').value = dog.careInstructions; document.querySelector('#dog-behavior').value = dog.behavioralNotes; document.querySelector('#dog-medical').value = dog.medicalNotes; document.querySelector('#dog-form').scrollIntoView({behavior:'smooth'}); }

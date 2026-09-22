@@ -151,9 +151,11 @@ async function saveHomeOwnerProfile(event) {
 async function updateHomeOwnerPhoto(event) {
   const file = event.currentTarget.files[0];
   if (!file) return;
-  const data = new FormData(); data.append('photo', file);
+  const data = new FormData();
   const controls = event.currentTarget.closest('.owner-inline-controls');
   try {
+    controls.dataset.message = 'Preparing photo…';
+    data.append('photo', await PrincessApi.uploadReadyImage(file));
     const result = await PrincessApi.request('/api/site-content/about-photo',{method:'PUT',body:data});
     ownerPhoto.src = `api/site-content/about-photo?v=${encodeURIComponent(result.updatedAt)}`;
     ownerPhoto.hidden = false;
