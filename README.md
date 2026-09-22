@@ -35,7 +35,7 @@ Customers can create an account with email or Google, save multiple dogs, reques
 
 ![Live service catalog with current prices](docs/screenshots/services.png)
 
-The public catalog loads active services and prices from the API. From the protected owner dashboard, Julia can create, edit, disable, or remove eligible services without changing the frontend code. The same dashboard includes a color-coded booking calendar, status updates, customer-assisted booking, availability blocks, and per-stay overnight schedule controls.
+The public catalog loads active services and prices from the API. From the protected owner dashboard, Julia can create, edit, disable, or remove eligible services without changing the frontend code. The same dashboard includes a color-coded booking calendar, status updates, customer-assisted booking, availability blocks, and nightly overnight totals.
 
 ## How booking works
 
@@ -44,7 +44,7 @@ The public catalog loads active services and prices from the API. From the prote
 3. The browser presents a final review, but the API independently validates the service, dog ownership, price, duration, blocks, and booking conflicts before saving anything.
 4. Customer requests begin as **Pending**. Julia can confirm, decline, complete, or cancel them from the owner dashboard, and the customer sees the current status in their dashboard.
 
-The owner dashboard also provides a color-coded booking calendar, customer-assisted booking, availability blocks, service management, and per-booking overnight schedule controls. All owner operations are protected by server-side role authorization.
+The owner dashboard also provides a color-coded booking calendar, customer-assisted booking, availability blocks, service management, customer approvals, gallery publishing, and team publishing. All owner operations are protected by server-side role authorization.
 
 ## Built with
 

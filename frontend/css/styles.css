@@ -403,6 +403,12 @@ textarea { min-height: 105px; resize: vertical; }
 }
 
 @media (max-width: 520px) {
+  .service-list { width: 92%; max-width: 340px; margin-inline: auto; gap: .75rem; }
+  .service-row { grid-template-columns: 36px minmax(0,1fr); gap: .75rem; padding: 1rem; border-radius: 16px; }
+  .service-number { font-size: 1.35rem; }
+  .service-row h3 { font-size: 1.2rem; }
+  .service-row p { font-size: .82rem; line-height: 1.45; }
+  .service-price { grid-column: 2; font-size: 1.15rem; }
   .availability-controls { align-items: stretch; flex-direction: column; padding: 1rem; }
   .availability-service-field { width: 100%; }
   .calendar-view-switch, .calendar-view-button { width: 100%; }
@@ -421,3 +427,33 @@ textarea { min-height: 105px; resize: vertical; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; }
 }
+
+/* Account approval, private profiles, gallery, and team */
+.dashboard-owner-intro { display:grid; grid-template-columns:minmax(0,.8fr) minmax(340px,1.2fr); gap:2rem; align-items:center; }
+.dashboard-owner-card { display:grid; grid-template-columns:150px 1fr; gap:1.25rem; align-items:center; padding:1.25rem; background:rgba(255,255,255,.8); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); }
+.dashboard-owner-card img { width:150px; height:180px; object-fit:cover; border-radius:16px; }
+.dashboard-owner-card h2 { margin:.2rem 0 .5rem; }
+.dashboard-owner-card p { margin:0; }
+.approval-banner { margin-bottom:1.5rem; padding:1rem 1.2rem; border-radius:14px; font-weight:700; }
+.approval-banner.pending { color:#7b4a00; background:#ffe8b7; }
+.approval-banner.declined { color:#7a2530; background:#f5d9dd; }
+.status-approved { color:#315f4c; background:#d9eee5; }
+.dog-profile-card { overflow:hidden; }
+.dog-profile-photo,.customer-profile-photo,.content-thumbnail { display:block; width:100%; height:180px; margin-bottom:1rem; object-fit:cover; border-radius:12px; }
+.customer-profile-photo { width:72px; height:72px; float:right; margin:0 0 .6rem 1rem; border-radius:50%; }
+.profile-photo-form { align-content:start; }
+.profile-photo-form img { width:180px; height:180px; object-fit:cover; border-radius:50%; }
+.public-content-list { grid-template-columns:repeat(3,minmax(0,1fr)); margin:2rem 0; }
+.gallery-carousel { display:grid; min-height:520px; place-items:center; }
+.gallery-slide { width:min(100%,850px); margin:0; text-align:center; }
+.gallery-slide img { display:block; width:100%; max-height:650px; object-fit:contain; background:#fff0f6; border-radius:24px; box-shadow:var(--shadow); }
+.gallery-slide figcaption { padding:1rem; color:var(--muted); font-weight:700; }
+.gallery-controls { display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:1rem; }
+.gallery-controls[hidden] { display:none; }
+.team-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.5rem; }
+.team-card { padding:1.25rem; background:var(--paper); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); }
+.team-card img,.team-photo-placeholder { width:100%; aspect-ratio:4/5; object-fit:cover; margin-bottom:1.25rem; border-radius:15px; }
+.team-photo-placeholder { display:grid; place-items:center; color:white; background:var(--forest); font-family:'Fraunces',serif; font-size:5rem; }
+
+@media (max-width:900px){.dashboard-owner-intro,.dashboard-owner-card { grid-template-columns:1fr; }.dashboard-owner-card img { width:100%; height:300px; }.public-content-list,.team-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }}
+@media (max-width:600px){.public-content-list,.team-grid { grid-template-columns:1fr; }.gallery-carousel { min-height:340px; }.gallery-controls { flex-wrap:wrap; }}

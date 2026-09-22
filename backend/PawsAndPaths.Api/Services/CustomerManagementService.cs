@@ -27,7 +27,10 @@ public sealed class CustomerManagementService(AppDbContext db, UserManager<AppUs
             FullName = request.FullName.Trim(),
             UserName = email,
             Email = email,
-            PhoneNumber = request.Phone.Trim()
+            PhoneNumber = request.Phone.Trim(),
+            ServiceArea = request.ServiceArea.Trim(),
+            ServiceAddress = request.ServiceAddress.Trim(),
+            ApprovalStatus = AccountApprovalStatus.Approved
         };
         var createResult = await userManager.CreateAsync(user);
         if (!createResult.Succeeded)
@@ -60,6 +63,7 @@ public sealed class CustomerManagementService(AppDbContext db, UserManager<AppUs
         }
 
         return (new CustomerSummaryDto(user.Id, user.FullName, email,
-            user.PhoneNumber ?? string.Empty, [dog.ToDto()]), null);
+            user.PhoneNumber ?? string.Empty, user.ServiceArea, user.ServiceAddress,
+            user.ApprovalStatus, false, [dog.ToDto()]), null);
     }
 }

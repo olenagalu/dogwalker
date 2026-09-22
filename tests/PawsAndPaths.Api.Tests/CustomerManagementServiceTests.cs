@@ -26,7 +26,8 @@ public class CustomerManagementServiceTests
 
         var (customer, error) = await service.CreateWithDogAsync(
             new CreateOwnerCustomerWithDogDto(
-                "Morgan Lee", "MORGAN@example.com", "561-555-0101", "Luna", "Mixed breed", 4),
+                "Morgan Lee", "MORGAN@example.com", "561-555-0101",
+                "Boca Raton", "123 Palm Ave", "Luna", "Mixed breed", 4),
             CancellationToken.None);
 
         Assert.Null(error);
@@ -37,6 +38,7 @@ public class CustomerManagementServiceTests
         Assert.NotNull(user);
         Assert.False(await userManager.HasPasswordAsync(user));
         Assert.True(await userManager.IsInRoleAsync(user, AppRoles.Customer));
+        Assert.Equal(AccountApprovalStatus.Approved, user.ApprovalStatus);
     }
 
     [Fact]

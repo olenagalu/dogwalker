@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PawsAndPaths.Api.Data;
 using PawsAndPaths.Api.Models;
+using PawsAndPaths.Api.Services;
 
 namespace PawsAndPaths.Api.Controllers;
 
@@ -11,6 +12,7 @@ namespace PawsAndPaths.Api.Controllers;
 public class SiteContentController(AppDbContext db) : ControllerBase
 {
     private const string AboutPhotoKey = "about-photo";
+    private const string OwnerDescriptionKey = "owner-description";
     private const int MaximumPhotoBytes = 5 * 1024 * 1024;
 
     [HttpGet("about-photo")]
@@ -28,6 +30,28 @@ public class SiteContentController(AppDbContext db) : ControllerBase
         Response.Headers.CacheControl = "public, no-cache";
         Response.Headers.XContentTypeOptions = "nosniff";
         return File(photo.Data, photo.ContentType);
+    }
+
+    [HttpGet("owner-description"), AllowAnonymous]
+    public async Task<IActionResult> GetOwnerDescription(CancellationToken cancellationToken)
+    {
+        var content = await db.SiteContent.AsNoTracking().SingleOrDefaultAsync(
+            item => item.Key == OwnerDescriptionKey, cancellationToken);
+        return Ok(new { text = content?.Text ?? "Hi, I’m Julia. I provide thoughtful, dependable care tailored to every dog and family." });
+    }
+
+    [HttpPut("owner-description"), Authorize(Roles = AppRoles.Owner)]
+    public async Task<IActionResult> UpdateOwnerDescription([FromBody] OwnerDescriptionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var text = request.Text?.Trim() ?? string.Empty;
+        if (text.Length is < 1 or > 3000) return BadRequest(new { message = "Description must be between 1 and 3,000 characters." });
+        var content = await db.SiteContent.SingleOrDefaultAsync(item => item.Key == OwnerDescriptionKey, cancellationToken);
+        if (content is null) { content = new SiteContent { Key = OwnerDescriptionKey }; db.SiteContent.Add(content); }
+        content.Text = text;
+        content.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return Ok(new { content.Text, content.UpdatedAt });
     }
 
     [HttpPut("about-photo")]
@@ -77,3 +101,5 @@ public class SiteContentController(AppDbContext db) : ControllerBase
         return null;
     }
 }
+
+public record OwnerDescriptionRequest(string? Text);

@@ -8,7 +8,7 @@ PrincessApi.request('/api/services').then(services => {
     row.querySelector('h3').textContent = service.name;
     const duration = service.isOvernightStay ? 'Multi-day overnight care' : `${service.durationMinutes} minutes`;
     row.querySelector('p').textContent = `${service.description} · ${duration}`;
-    row.querySelector('.service-price').textContent = `$${Number(service.price).toFixed(2)}`;
+    row.querySelector('.service-price').textContent = `$${Number(service.price).toFixed(2)}${service.isOvernightStay ? ' / night' : ''}`;
     serviceList.append(row);
   });
 }).catch(error => { serviceList.innerHTML = `<div class="empty-state">${error.message}</div>`; });

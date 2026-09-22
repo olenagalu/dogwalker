@@ -1,8 +1,10 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
@@ -64,8 +66,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("account", limiter =>
+    {
+        limiter.PermitLimit = 12;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueLimit = 0;
+        limiter.AutoReplenishment = true;
+    });
+    options.AddFixedWindowLimiter("contact", limiter =>
+    {
+        limiter.PermitLimit = 5;
+        limiter.Window = TimeSpan.FromMinutes(5);
+        limiter.QueueLimit = 0;
+        limiter.AutoReplenishment = true;
+    });
+});
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IWelcomeEmailSender, WelcomeEmailSender>();
+builder.Services.AddScoped<IPasswordResetEmailSender, PasswordResetEmailSender>();
+builder.Services.AddScoped<IOwnerNotificationEmailSender, OwnerNotificationEmailSender>();
 builder.Services.AddScoped<ICustomerManagementService, CustomerManagementService>();
 builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
@@ -92,6 +114,16 @@ app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
     await Results.Problem(title: "The request could not be completed.",
         statusCode: StatusCodes.Status500InternalServerError).ExecuteAsync(context);
 }));
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.XContentTypeOptions = "nosniff";
+    context.Response.Headers.XFrameOptions = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/ https://www.openstreetmap.org; connect-src 'self' https://accounts.google.com/gsi/; font-src 'self' data: https://fonts.gstatic.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+    await next();
+});
+app.UseRouting();
+app.UseRateLimiter();
 app.UseCors("Frontend");
 app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions

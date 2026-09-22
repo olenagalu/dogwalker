@@ -28,6 +28,9 @@ public class BookingService(AppDbContext db, IAvailabilityService availability) 
 
         var dog = await db.Dogs.SingleOrDefaultAsync(item => item.Id == request.DogId && item.UserId == userId, cancellationToken);
         if (dog is null) return (null, "The selected dog does not belong to this account.");
+        var user = await db.Users.AsNoTracking().SingleOrDefaultAsync(item => item.Id == userId, cancellationToken);
+        if (user is null || user.ApprovalStatus != AccountApprovalStatus.Approved)
+            return (null, "Julia must approve your account and service area before you can book.");
 
         var service = await db.Services.SingleOrDefaultAsync(item => item.Id == request.ServiceId && item.IsActive, cancellationToken);
         if (service is null) return (null, "The selected service is unavailable.");
@@ -74,7 +77,9 @@ public class BookingService(AppDbContext db, IAvailabilityService availability) 
             OvernightEndTime = service.IsOvernightStay ? overnightEnd : null,
             MiddayStartTime = service.IsOvernightStay ? middayStart : null,
             MiddayEndTime = service.IsOvernightStay ? middayEnd : null,
-            Price = service.Price,
+            Price = service.IsOvernightStay
+                ? service.Price * BookingPricing.Nights(request.Date, request.EndDate)
+                : service.Price,
             SpecialInstructions = request.SpecialInstructions?.Trim() ?? string.Empty,
             Status = initialStatus
         };

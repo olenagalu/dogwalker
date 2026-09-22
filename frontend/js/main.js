@@ -8,7 +8,7 @@ if (nav) {
     : '<a href="auth.html">Sign in / Sign up</a>';
   nav.innerHTML = `
     <a href="index.html">Home</a><a href="services.html">Services</a>
-    <a href="availability.html">Availability</a><a href="about.html">About</a>
+    <a href="availability.html">Availability</a><a href="gallery.html">Gallery</a><a href="team.html">Our Team</a><a href="about.html">About</a>
     <a href="contact.html">Contact</a>${accountLink}<a class="button" href="book.html">Book a service</a>`;
   nav.querySelector(`a[href="${currentPage}"]`)?.setAttribute('aria-current', 'page');
   nav.querySelector('.nav-signout')?.addEventListener('click', () => PrincessApi.signOut());

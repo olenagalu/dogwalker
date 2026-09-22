@@ -16,7 +16,7 @@ endDateInput.value = query.get('endDate') || '';
 
 if (bookingUser) Promise.all([PrincessApi.request('/api/services'), PrincessApi.request('/api/dogs')]).then(([serviceData, dogData]) => {
   services = serviceData; dogs = dogData;
-  services.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}`, service.id)));
+  services.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}${service.isOvernightStay?' / night':''}`, service.id)));
   dogs.forEach(dog => dogSelect.add(new Option(`${dog.name}${dog.breed ? ` · ${dog.breed}` : ''}`, dog.id)));
   if (!dogs.length) { statusBox.innerHTML = 'Add at least one dog in your <a href="dashboard.html#dogs">customer dashboard</a> before booking.'; statusBox.className = 'form-status error'; }
   serviceSelect.value = query.get('serviceId') || '';
@@ -26,7 +26,7 @@ if (bookingUser) Promise.all([PrincessApi.request('/api/services'), PrincessApi.
 serviceSelect.addEventListener('change', () => { toggleOvernight(); loadSlots(); });
 dateInput.addEventListener('change', () => { endDateInput.min = dateInput.value; loadSlots(); });
 function selectedService(){return services.find(item=>String(item.id)===serviceSelect.value);}
-function toggleOvernight(){const overnight=Boolean(selectedService()?.isOvernightStay);document.querySelector('#book-end-field').hidden=!overnight;document.querySelector('#overnight-default-note').hidden=!overnight;endDateInput.required=overnight;timeSelect.required=!overnight;timeSelect.disabled=overnight;if(overnight){timeSelect.innerHTML='<option value="">Uses the overnight care schedule</option>';if(!endDateInput.value){const next=new Date(`${dateInput.value}T00:00:00`);next.setDate(next.getDate()+1);endDateInput.value=`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}-${String(next.getDate()).padStart(2,'0')}`;}}}
+function toggleOvernight(){const overnight=Boolean(selectedService()?.isOvernightStay);document.querySelector('#book-end-field').hidden=!overnight;endDateInput.required=overnight;timeSelect.required=!overnight;timeSelect.disabled=overnight;if(overnight){timeSelect.innerHTML='<option value="">Overnight stay</option>';if(!endDateInput.value){const next=new Date(`${dateInput.value}T00:00:00`);next.setDate(next.getDate()+1);endDateInput.value=`${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}-${String(next.getDate()).padStart(2,'0')}`;}}}
 async function loadSlots(preferred) {
   if (selectedService()?.isOvernightStay) return toggleOvernight();
   timeSelect.disabled = true; timeSelect.innerHTML = '<option value="">Checking open times…</option>';
@@ -46,8 +46,11 @@ form.addEventListener('submit', event => {
   draft = Object.fromEntries(new FormData(form));
   const service = services.find(item => String(item.id) === draft.serviceId); const dog = dogs.find(item => String(item.id) === draft.dogId);
   if(service.isOvernightStay)draft.startTime='22:00';
-  const when=service.isOvernightStay?`${formatDate(draft.date)}–${formatDate(draft.endDate)}<br><small>10 PM–9 AM overnight · 2–3 PM midday</small>`:`${formatDate(draft.date)} at ${formatTime(draft.startTime)}`;
-  document.querySelector('#review-details').innerHTML = `<div><dt>Dog</dt><dd>${escapeText(dog.name)}</dd></div><div><dt>Service</dt><dd>${escapeText(service.name)}</dd></div><div><dt>When</dt><dd>${when}</dd></div><div><dt>Price</dt><dd>$${Number(service.price).toFixed(2)}</dd></div><div><dt>Instructions</dt><dd>${escapeText(draft.specialInstructions || 'None')}</dd></div>`;
+  const nights=service.isOvernightStay?daysBetween(draft.date,draft.endDate):1;
+  const total=Number(service.price)*nights;
+  const when=service.isOvernightStay?`${formatDate(draft.date)}–${formatDate(draft.endDate)}<br><small>${nights} night${nights===1?'':'s'}</small>`:`${formatDate(draft.date)} at ${formatTime(draft.startTime)}`;
+  const price=service.isOvernightStay?`$${Number(service.price).toFixed(2)} × ${nights} nights = $${total.toFixed(2)}`:`$${total.toFixed(2)}`;
+  document.querySelector('#review-details').innerHTML = `<div><dt>Dog</dt><dd>${escapeText(dog.name)}</dd></div><div><dt>Service</dt><dd>${escapeText(service.name)}</dd></div><div><dt>When</dt><dd>${when}</dd></div><div><dt>Total</dt><dd>${price}</dd></div><div><dt>Instructions</dt><dd>${escapeText(draft.specialInstructions || 'None')}</dd></div>`;
   form.hidden = true; review.hidden = false; review.scrollIntoView({ behavior:'smooth', block:'start' });
 });
 document.querySelector('#edit-booking').addEventListener('click', () => { review.hidden = true; form.hidden = false; });
@@ -61,3 +64,4 @@ function feedback(message, type) { statusBox.textContent = message; statusBox.cl
 function formatDate(value) { return new Intl.DateTimeFormat('en-US', { weekday:'long', month:'long', day:'numeric', timeZone:'UTC' }).format(new Date(`${value}T00:00:00Z`)); }
 function formatTime(value) { const [h,m] = value.split(':'); return new Intl.DateTimeFormat('en-US', { hour:'numeric', minute:'2-digit' }).format(new Date(2000,0,1,h,m)); }
 function escapeText(value) { const node = document.createElement('span'); node.textContent = value; return node.innerHTML; }
+function daysBetween(start,end){return Math.max(1,Math.round((new Date(`${end}T00:00:00Z`)-new Date(`${start}T00:00:00Z`))/86400000));}

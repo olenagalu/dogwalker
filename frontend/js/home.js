@@ -7,7 +7,9 @@ PrincessApi.request('/api/services').then(services => {
     card.innerHTML = `<div class="card-icon">${String(index + 1).padStart(2, '0')}</div><h3></h3><p></p><span class="price"></span>`;
     card.querySelector('h3').textContent = service.name;
     card.querySelector('p').textContent = service.description;
-    card.querySelector('.price').textContent = `$${Number(service.price).toFixed(2)} · ${service.durationMinutes} min`;
+    card.querySelector('.price').textContent = service.isOvernightStay
+      ? `$${Number(service.price).toFixed(2)} / night`
+      : `$${Number(service.price).toFixed(2)} · ${service.durationMinutes} min`;
     homeServices.append(card);
   });
 }).catch(() => { homeServices.innerHTML = '<div class="empty-state">Services will appear here when the booking service is running.</div>'; });

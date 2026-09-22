@@ -13,5 +13,7 @@ public class Dog
     [MaxLength(2000)] public string CareInstructions { get; set; } = string.Empty;
     [MaxLength(1500)] public string BehavioralNotes { get; set; } = string.Empty;
     [MaxLength(1500)] public string MedicalNotes { get; set; } = string.Empty;
+    [MaxLength(100)] public string PhotoContentType { get; set; } = string.Empty;
+    public byte[] PhotoData { get; set; } = [];
     public ICollection<Booking> Bookings { get; set; } = [];
 }

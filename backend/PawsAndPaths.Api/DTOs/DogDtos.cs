@@ -12,4 +12,4 @@ public record DogWriteDto(
 
 public record DogDto(
     int Id, string Name, string Breed, int? Age,
-    string CareInstructions, string BehavioralNotes, string MedicalNotes);
+    string CareInstructions, string BehavioralNotes, string MedicalNotes, bool HasPhoto);

@@ -2,6 +2,12 @@ const panels = ['login', 'register', 'forgot', 'reset'];
 const statusBox = document.querySelector('#auth-status');
 initializePasswordToggles();
 initializeGoogleSignIn();
+const resetQuery = new URLSearchParams(location.search);
+if (resetQuery.get('resetToken') && resetQuery.get('email')) {
+  document.querySelector('#reset-token').value = resetQuery.get('resetToken');
+  document.querySelector('#reset-email').value = resetQuery.get('email');
+  showPanel('reset');
+}
 
 function initializePasswordToggles() {
   document.querySelectorAll('input[type="password"]').forEach(input => {

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using PawsAndPaths.Api.Data;
 using PawsAndPaths.Api.DTOs;
 using PawsAndPaths.Api.Models;
+using PawsAndPaths.Api.Services;
 
 namespace PawsAndPaths.Api.Controllers;
 
@@ -59,10 +60,42 @@ public class DogsController(AppDbContext db) : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("{id:int}/photo")]
+    public async Task<IActionResult> Photo(int id, CancellationToken cancellationToken)
+    {
+        var dog = await FindOwnedOrOwner(id, cancellationToken);
+        if (dog is null) return NotFound();
+        if (dog.PhotoData.Length == 0) return NotFound();
+        Response.Headers.CacheControl = "private, no-cache";
+        Response.Headers.XContentTypeOptions = "nosniff";
+        return File(dog.PhotoData, dog.PhotoContentType);
+    }
+
+    [HttpPut("{id:int}/photo"), RequestSizeLimit(ImageUpload.MaximumBytes + 65536)]
+    public async Task<IActionResult> UpdatePhoto(int id, [FromForm] IFormFile? photo,
+        CancellationToken cancellationToken)
+    {
+        var dog = await FindOwned(id, cancellationToken);
+        if (dog is null) return NotFound();
+        var upload = await ImageUpload.ReadAsync(photo, cancellationToken);
+        if (upload.Error is not null) return BadRequest(new { message = upload.Error });
+        dog.PhotoData = upload.Data!;
+        dog.PhotoContentType = upload.ContentType!;
+        await db.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
     private Task<Dog?> FindOwned(int id, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         return db.Dogs.SingleOrDefaultAsync(dog => dog.Id == id && dog.UserId == userId, cancellationToken);
+    }
+
+    private Task<Dog?> FindOwnedOrOwner(int id, CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var isOwner = User.IsInRole(AppRoles.Owner);
+        return db.Dogs.SingleOrDefaultAsync(dog => dog.Id == id && (isOwner || dog.UserId == userId), cancellationToken);
     }
 
     private static void Apply(Dog dog, DogWriteDto request)

@@ -11,5 +11,7 @@ public class SiteContent
     public string ContentType { get; set; } = string.Empty;
 
     public byte[] Data { get; set; } = [];
+    [MaxLength(3000)]
+    public string Text { get; set; } = string.Empty;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

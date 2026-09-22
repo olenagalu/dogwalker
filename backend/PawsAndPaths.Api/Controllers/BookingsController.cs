@@ -11,7 +11,11 @@ namespace PawsAndPaths.Api.Controllers;
 
 [ApiController, Authorize]
 [Route("api/bookings")]
-public class BookingsController(AppDbContext db, IBookingService bookingService) : ControllerBase
+public class BookingsController(
+    AppDbContext db,
+    IBookingService bookingService,
+    IOwnerNotificationEmailSender notificationSender,
+    ILogger<BookingsController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<BookingDto>>> GetMine(CancellationToken cancellationToken)
@@ -38,6 +42,25 @@ public class BookingsController(AppDbContext db, IBookingService bookingService)
         var (booking, error) = await bookingService.CreateAsync(userId, request, cancellationToken);
         if (booking is null) return Conflict(new { message = error });
         var complete = await Query().SingleAsync(item => item.Id == booking.Id, cancellationToken);
+        try
+        {
+            await notificationSender.SendBookingRequestAsync(new BookingNotification(
+                complete.User.FullName,
+                complete.User.Email ?? string.Empty,
+                complete.User.PhoneNumber ?? string.Empty,
+                complete.Dog.Name,
+                complete.ServiceOffering.Name,
+                complete.Date,
+                complete.EndDate,
+                complete.StartTime,
+                complete.EndTime,
+                complete.Price,
+                complete.SpecialInstructions), cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Owner email notification failed for booking {BookingId}.", complete.Id);
+        }
         return CreatedAtAction(nameof(GetMine), new { id = booking.Id }, complete.ToDto());
     }
 

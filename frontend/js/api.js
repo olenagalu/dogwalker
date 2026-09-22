@@ -20,6 +20,15 @@ const PrincessApi = (() => {
     return body;
   }
 
+  async function privateImageUrl(path) {
+    const token = sessionStorage.getItem(tokenKey);
+    const response = await fetch(`${baseUrl}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!response.ok) throw new Error('The private photo could not be loaded.');
+    return URL.createObjectURL(await response.blob());
+  }
+
   function setSession(response) {
     sessionStorage.setItem(tokenKey, response.token);
     sessionStorage.setItem(userKey, JSON.stringify(response.user));
@@ -46,5 +55,5 @@ const PrincessApi = (() => {
     return current;
   }
 
-  return { request, setSession, user, signOut, requireUser };
+  return { request, privateImageUrl, setSession, user, signOut, requireUser };
 })();

@@ -12,6 +12,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<ContactMessage> ContactMessages => Set<ContactMessage>();
     public DbSet<SiteContent> SiteContent => Set<SiteContent>();
+    public DbSet<GalleryPhoto> GalleryPhotos => Set<GalleryPhoto>();
+    public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +36,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             .HasForeignKey(booking => booking.ServiceOfferingId).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Booking>().Property(booking => booking.Status)
+            .HasConversion<string>().HasMaxLength(20);
+        modelBuilder.Entity<AppUser>().Property(user => user.ApprovalStatus)
             .HasConversion<string>().HasMaxLength(20);
         modelBuilder.Entity<Booking>()
             .HasIndex(booking => new { booking.Date, booking.StartTime, booking.EndTime });

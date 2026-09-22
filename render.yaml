@@ -2,7 +2,7 @@ services:
   - type: web
     name: princess-dog-walker
     runtime: docker
-    plan: free
+    plan: 0.5c-512mb
     dockerfilePath: ./backend/PawsAndPaths.Api/Dockerfile
     dockerContext: .
     healthCheckPath: /health
@@ -10,6 +10,8 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+      - key: PublicBaseUrl
+        value: https://princess-dog-walker.onrender.com
       - key: ApplyMigrationsOnStartup
         value: "true"
       - key: Jwt__Key
@@ -55,7 +57,7 @@ services:
 
 databases:
   - name: princess-dog-walker-db
-    plan: free
+    plan: 0.1c-256mb
     databaseName: princessdogwalker
     user: princessdogwalker
     postgresMajorVersion: "17"

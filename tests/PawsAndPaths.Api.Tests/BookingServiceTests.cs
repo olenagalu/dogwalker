@@ -146,6 +146,39 @@ public class BookingServiceTests
         Assert.False(available);
     }
 
+    [Fact]
+    public async Task OvernightBooking_MultipliesNightlyRateByNumberOfNights()
+    {
+        await using var db = CreateDatabase();
+        var (user, dog, service, date) = await Seed(db);
+        service.IsOvernightStay = true;
+        service.Price = 80m;
+        await db.SaveChangesAsync();
+
+        var (booking, error) = await new BookingService(db, new AvailabilityService(db)).CreateAsync(
+            user.Id, new CreateBookingDto(dog.Id, service.Id, date, new TimeOnly(22, 0), null, date.AddDays(10)),
+            CancellationToken.None);
+
+        Assert.Null(error);
+        Assert.NotNull(booking);
+        Assert.Equal(800m, booking.Price);
+    }
+
+    [Fact]
+    public async Task PendingCustomer_CannotCreateBooking()
+    {
+        await using var db = CreateDatabase();
+        var (user, dog, service, date) = await Seed(db);
+        user.ApprovalStatus = AccountApprovalStatus.Pending;
+        await db.SaveChangesAsync();
+
+        var (booking, error) = await new BookingService(db, new AvailabilityService(db)).CreateAsync(
+            user.Id, new CreateBookingDto(dog.Id, service.Id, date, new TimeOnly(10, 0), null), CancellationToken.None);
+
+        Assert.Null(booking);
+        Assert.Contains("approve", error, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static AppDbContext CreateDatabase() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 

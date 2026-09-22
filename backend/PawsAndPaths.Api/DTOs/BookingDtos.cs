@@ -37,8 +37,13 @@ public record UpdateOvernightScheduleDto(
 public record UpdateBookingStatusDto(BookingStatus Status);
 
 public record BookingDto(
-    int Id, string CustomerName, string CustomerEmail, int DogId, string DogName,
+    int Id, string CustomerName, string CustomerEmail, string CustomerPhone, int DogId, string DogName,
     int ServiceId, string ServiceName, DateOnly Date, TimeOnly StartTime, TimeOnly EndTime,
     decimal Price, string SpecialInstructions, BookingStatus Status, DateTimeOffset CreatedAt,
     DateOnly? EndDate, bool IsOvernightStay, TimeOnly? OvernightStartTime,
     TimeOnly? OvernightEndTime, TimeOnly? MiddayStartTime, TimeOnly? MiddayEndTime);
+
+public static class BookingPricing
+{
+    public static int Nights(DateOnly start, DateOnly? end) => end is null ? 1 : Math.Max(1, end.Value.DayNumber - start.DayNumber);
+}
