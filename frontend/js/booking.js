@@ -1,4 +1,5 @@
 const bookingUser = PrincessApi.requireUser();
+if (bookingUser?.role === 'Owner') window.location.replace('owner.html');
 const form = document.querySelector('#booking-form');
 const serviceSelect = document.querySelector('#book-service');
 const dogSelect = document.querySelector('#book-dog');
@@ -14,7 +15,7 @@ dateInput.min = today; dateInput.value = query.get('date') || today;
 endDateInput.min = today;
 endDateInput.value = query.get('endDate') || '';
 
-if (bookingUser) Promise.all([PrincessApi.request('/api/services'), PrincessApi.request('/api/dogs')]).then(([serviceData, dogData]) => {
+if (bookingUser?.role === 'Customer') Promise.all([PrincessApi.request('/api/services'), PrincessApi.request('/api/dogs')]).then(([serviceData, dogData]) => {
   services = serviceData; dogs = dogData;
   services.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}${service.isOvernightStay?' / night':''}`, service.id)));
   dogs.forEach(dog => dogSelect.add(new Option(`${dog.name}${dog.breed ? ` · ${dog.breed}` : ''}`, dog.id)));

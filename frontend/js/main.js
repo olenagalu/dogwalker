@@ -3,15 +3,23 @@ const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 const nav = document.querySelector('.nav-links');
 
 if (nav) {
-  const accountLink = currentUser
-    ? `<a href="${currentUser.role === 'Owner' ? 'owner.html' : 'dashboard.html'}">Dashboard</a><button class="nav-signout" type="button">Sign out</button>`
-    : '<a href="auth.html">Sign in / Sign up</a>';
-  nav.innerHTML = `
-    <a href="index.html">Home</a><a href="services.html">Services</a>
-    <a href="availability.html">Availability</a><a href="team.html">Our Team</a>
-    <a href="contact.html">Contact</a>${accountLink}<a class="button" href="book.html">Book a service</a>`;
+  if (currentUser?.role === 'Owner') {
+    nav.innerHTML = '<a href="index.html">Home</a><a href="owner.html">Owner Dashboard</a><button class="nav-signout" type="button">Sign out</button>';
+  } else {
+    const accountLink = currentUser
+      ? '<a href="dashboard.html">Dashboard</a><button class="nav-signout" type="button">Sign out</button>'
+      : '<a href="auth.html">Sign in / Sign up</a>';
+    nav.innerHTML = `
+      <a href="index.html">Home</a><a href="services.html">Services</a>
+      <a href="availability.html">Availability</a><a href="team.html">Our Team</a>
+      <a href="contact.html">Contact</a>${accountLink}<a class="button" href="book.html">Book a service</a>`;
+  }
   nav.querySelector(`a[href="${currentPage}"]`)?.setAttribute('aria-current', 'page');
   nav.querySelector('.nav-signout')?.addEventListener('click', () => PrincessApi.signOut());
+}
+
+if (currentUser?.role === 'Owner') {
+  document.querySelectorAll('a[href="book.html"]').forEach(link => link.remove());
 }
 
 document.querySelectorAll('.brand').forEach(brand => {
