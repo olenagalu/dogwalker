@@ -38,7 +38,8 @@ public class OwnerNotificationEmailContentTests
                 "Sam Taylor", "customer@example.com", "561-555-0100", "Buddy", "Overnight stay",
                 new DateOnly(2026, 10, 2), new DateOnly(2026, 10, 4),
                 new TimeOnly(22, 0), new TimeOnly(9, 0), 95m, "Needs medication"),
-            "kadulinaiulia@gmail.com", "sender@example.com", "Princess Dog Walker");
+            "kadulinaiulia@gmail.com", "sender@example.com", "Princess Dog Walker",
+            "https://princess-dog-walker.onrender.com/owner.html#owner-messages");
 
         Assert.Equal("kadulinaiulia@gmail.com", message.To.Mailboxes.Single().Address);
         Assert.Equal("customer@example.com", message.ReplyTo.Mailboxes.Single().Address);
@@ -46,6 +47,8 @@ public class OwnerNotificationEmailContentTests
         Assert.Contains("Buddy", message.TextBody);
         Assert.Contains("October 2, 2026 through October 4, 2026", message.TextBody);
         Assert.Contains("Needs medication", message.TextBody);
+        Assert.Contains("owner.html#owner-messages", message.TextBody);
+        Assert.Contains("approve or decline", message.HtmlBody, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -45,7 +45,8 @@ public sealed class OwnerNotificationEmailSender(
             notification,
             OwnerEmail,
             FromAddress,
-            configuration["Email:FromName"] ?? "Princess Dog Walker"), cancellationToken);
+            configuration["Email:FromName"] ?? "Princess Dog Walker",
+            $"{(configuration["PublicBaseUrl"] ?? "https://princess-dog-walker.onrender.com").TrimEnd('/')}/owner.html#owner-messages"), cancellationToken);
 
     private string OwnerEmail => configuration["Owner:Email"] ?? "kadulinaiulia@gmail.com";
     private string FromAddress => configuration["Email:FromAddress"]
@@ -97,7 +98,8 @@ public static class OwnerNotificationEmailContent
     }
 
     public static MimeMessage CreateBookingRequest(
-        BookingNotification notification, string ownerEmail, string fromAddress, string fromName)
+        BookingNotification notification, string ownerEmail, string fromAddress, string fromName,
+        string? ownerDashboardUrl = null)
     {
         var dateText = notification.EndDate is null
             ? notification.Date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture)
@@ -121,9 +123,15 @@ public static class OwnerNotificationEmailContent
         };
         var message = CreateBase(ownerEmail, fromAddress, fromName, notification.CustomerEmail,
             $"New booking request: {notification.ServiceName} for {notification.DogName}");
+        var dashboardText = string.IsNullOrWhiteSpace(ownerDashboardUrl)
+            ? string.Empty
+            : $"\n\nApprove or decline this request: {ownerDashboardUrl}";
+        var dashboardHtml = string.IsNullOrWhiteSpace(ownerDashboardUrl)
+            ? string.Empty
+            : $"<p><a href=\"{WebUtility.HtmlEncode(ownerDashboardUrl)}\">Open the owner dashboard to approve or decline</a></p>";
         message.Body = new BodyBuilder
         {
-            TextBody = $"New booking request\n\nCustomer: {notification.CustomerName}\nEmail: {notification.CustomerEmail}\nPhone: {notification.CustomerPhone}\nDog: {notification.DogName}\nService: {notification.ServiceName}\nDate: {dateText}\nTime: {timeText}\nPrice: {notification.Price:C}\nStatus: Pending\nSpecial instructions: {notes}",
+            TextBody = $"New booking request\n\nCustomer: {notification.CustomerName}\nEmail: {notification.CustomerEmail}\nPhone: {notification.CustomerPhone}\nDog: {notification.DogName}\nService: {notification.ServiceName}\nDate: {dateText}\nTime: {timeText}\nPrice: {notification.Price:C}\nStatus: Pending\nSpecial instructions: {notes}{dashboardText}",
             HtmlBody = $$"""
                 <h1>New booking request</h1>
                 <p><strong>Customer:</strong> {{safe.Customer}}<br>
@@ -136,6 +144,7 @@ public static class OwnerNotificationEmailContent
                 <strong>Price:</strong> {{notification.Price:C}}<br>
                 <strong>Status:</strong> Pending</p>
                 <p><strong>Special instructions:</strong><br>{{safe.Notes}}</p>
+                {{dashboardHtml}}
                 """
         }.ToMessageBody();
         return message;
