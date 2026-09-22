@@ -11,7 +11,7 @@ if (nav) {
       <button class="nav-signout" type="button">Sign out</button>`;
   } else {
     const accountLink = currentUser
-      ? '<a href="dashboard.html">Dashboard</a><button class="nav-signout" type="button">Sign out</button>'
+      ? '<a href="dashboard.html">Profile</a><button class="nav-signout" type="button">Sign out</button>'
       : '<a href="auth.html">Sign in / Sign up</a>';
     nav.innerHTML = `
       <a href="index.html">Home</a><a href="services.html">Services</a>

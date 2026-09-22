@@ -19,7 +19,7 @@ if (bookingUser?.role === 'Customer') Promise.all([PrincessApi.request('/api/ser
   services = serviceData; dogs = dogData;
   services.forEach(service => serviceSelect.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}${service.isOvernightStay?' / night':''}`, service.id)));
   dogs.forEach(dog => dogSelect.add(new Option(`${dog.name}${dog.breed ? ` · ${dog.breed}` : ''}`, dog.id)));
-  if (!dogs.length) { statusBox.innerHTML = 'Add at least one dog in your <a href="dashboard.html#dogs">customer dashboard</a> before booking.'; statusBox.className = 'form-status error'; }
+  if (!dogs.length) { statusBox.innerHTML = 'Add at least one dog in your <a href="dashboard.html#dogs">profile</a> before booking.'; statusBox.className = 'form-status error'; }
   serviceSelect.value = query.get('serviceId') || '';
   if (serviceSelect.value) loadSlots(query.get('time'));
 }).catch(error => feedback(error.message, 'error'));

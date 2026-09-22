@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
     public DbSet<SiteContent> SiteContent => Set<SiteContent>();
     public DbSet<GalleryPhoto> GalleryPhotos => Set<GalleryPhoto>();
     public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+    public DbSet<PasswordResetCode> PasswordResetCodes => Set<PasswordResetCode>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +27,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         modelBuilder.Entity<AppUser>()
             .HasMany(user => user.Bookings).WithOne(booking => booking.User)
             .HasForeignKey(booking => booking.UserId).OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AppUser>()
+            .HasMany(user => user.PasswordResetCodes).WithOne(code => code.User)
+            .HasForeignKey(code => code.UserId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<PasswordResetCode>()
+            .HasIndex(code => new { code.UserId, code.CreatedAt });
 
         modelBuilder.Entity<Dog>()
             .HasMany(dog => dog.Bookings).WithOne(booking => booking.Dog)

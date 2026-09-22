@@ -502,3 +502,46 @@ textarea { min-height: 105px; resize: vertical; }
 @media (max-width:600px){.team-grid,.owner-team-preview { grid-template-columns:1fr; }}
 @media (max-width:600px){.home-owner-contact { grid-template-columns:1fr; }}
 @media (max-width:600px){.owner-inline-controls { align-items:flex-start; flex-direction:column; }.owner-inline-controls::before { margin-right:0; }.owner-dialog-actions { align-items:stretch; flex-direction:column; }.owner-dialog-actions .button { width:100%; }}
+
+/* Compact customer profile */
+.customer-profile-page { min-height:calc(100vh - 90px); background:linear-gradient(180deg,#fff7fa 0,#fff 360px); }
+.customer-profile-shell { max-width:1180px; }
+.customer-profile-summary { display:grid; grid-template-columns:auto 1fr auto; gap:1.5rem; align-items:center; margin-bottom:1.5rem; padding:1.5rem; background:rgba(255,255,255,.9); border:1px solid var(--line); border-radius:24px; box-shadow:var(--shadow); }
+.customer-profile-summary h1 { margin:.15rem 0 .25rem; font-size:clamp(2.2rem,5vw,3.8rem); }
+.customer-profile-summary p { margin:0; color:var(--muted); }
+.customer-profile-avatar { display:grid; width:100px; height:100px; place-items:center; overflow:hidden; color:white; background:linear-gradient(145deg,var(--forest),#b43b70); border:5px solid #fff; border-radius:50%; box-shadow:0 8px 28px rgba(77,38,61,.2); font-family:'Fraunces',serif; font-size:2.7rem; }
+.customer-profile-avatar img { width:100%; height:100%; object-fit:cover; }
+.customer-profile-layout { display:grid; grid-template-columns:minmax(260px,.7fr) minmax(0,1.5fr); gap:1.5rem; align-items:start; }
+.profile-settings-menu { display:grid; overflow:hidden; background:var(--paper); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); }
+.profile-setting-button { display:flex; align-items:center; justify-content:space-between; gap:1rem; width:100%; padding:1.1rem 1.2rem; color:var(--forest); background:transparent; border:0; border-bottom:1px solid var(--line); text-align:left; cursor:pointer; }
+.profile-setting-button:last-child { border-bottom:0; }
+.profile-setting-button:hover,.profile-setting-button:focus-visible,.profile-setting-button.active { background:#fff0f6; }
+.profile-setting-button.active { box-shadow:inset 4px 0 #b43b70; }
+.profile-setting-button strong,.profile-setting-button small { display:block; }
+.profile-setting-button small { margin-top:.2rem; color:var(--muted); line-height:1.35; }
+.profile-setting-button > span:last-child { color:#b43b70; font-size:1.8rem; line-height:1; }
+.profile-panel { min-height:520px; padding:2rem; background:var(--paper); border:1px solid var(--line); border-radius:22px; box-shadow:var(--shadow); }
+.profile-panel[hidden] { display:none !important; }
+.profile-panel-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:1.75rem; padding-bottom:1.25rem; border-bottom:1px solid var(--line); }
+.profile-panel-heading h2 { margin:.2rem 0 .35rem; }
+.profile-panel-heading p { margin:0; color:var(--muted); }
+.profile-overview-grid,.dog-card-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.profile-overview-booking { margin-top:2rem; }
+.profile-subheading { margin-top:2rem; }
+.profile-inner-form { margin-top:1.5rem; box-shadow:none; }
+.profile-inner-form[hidden] { display:none !important; }
+
+@media (max-width:850px){
+  .customer-profile-summary { grid-template-columns:auto 1fr; }
+  .customer-profile-summary .button { grid-column:1 / -1; width:100%; text-align:center; }
+  .customer-profile-layout { grid-template-columns:1fr; }
+  .profile-settings-menu { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .profile-setting-button { border-right:1px solid var(--line); }
+}
+@media (max-width:600px){
+  .customer-profile-summary { grid-template-columns:1fr; text-align:center; }
+  .customer-profile-avatar { margin:auto; }
+  .profile-settings-menu,.profile-overview-grid,.dog-card-grid { grid-template-columns:1fr; }
+  .profile-panel { min-height:0; padding:1.25rem; }
+  .profile-panel-heading { flex-direction:column; }
+}

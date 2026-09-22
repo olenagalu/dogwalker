@@ -13,6 +13,7 @@ public class AppUser : IdentityUser
     public byte[] ProfilePhotoData { get; set; } = [];
     public ICollection<Dog> Dogs { get; set; } = [];
     public ICollection<Booking> Bookings { get; set; } = [];
+    public ICollection<PasswordResetCode> PasswordResetCodes { get; set; } = [];
 }
 
 public enum AccountApprovalStatus

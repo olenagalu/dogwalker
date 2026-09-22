@@ -2,12 +2,6 @@ const panels = ['login', 'register', 'forgot', 'reset'];
 const statusBox = document.querySelector('#auth-status');
 initializePasswordToggles();
 initializeGoogleSignIn();
-const resetQuery = new URLSearchParams(location.search);
-if (resetQuery.get('resetToken') && resetQuery.get('email')) {
-  document.querySelector('#reset-token').value = resetQuery.get('resetToken');
-  document.querySelector('#reset-email').value = resetQuery.get('email');
-  showPanel('reset');
-}
 
 function initializePasswordToggles() {
   document.querySelectorAll('input[type="password"]').forEach(input => {
@@ -97,9 +91,14 @@ document.querySelector('#forgot-panel').addEventListener('submit', async event =
   event.preventDefault();
   try {
     const response = await PrincessApi.request('/api/auth/forgot-password', { method:'POST', body:JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) });
-    if (response.resetToken) { document.querySelector('#reset-token').value = response.resetToken; document.querySelector('#reset-email').value = document.querySelector('#forgot-email').value; showPanel('reset'); feedback('Development reset token received. Choose a new password.', 'success'); }
-    else feedback(response.message, 'success');
+    document.querySelector('#reset-email').value = document.querySelector('#forgot-email').value;
+    if (response.resetCode) document.querySelector('#reset-code').value = response.resetCode;
+    showPanel('reset'); feedback(response.message, 'success');
   } catch (error) { feedback(error.message, 'error'); }
+});
+document.querySelector('#resend-code').addEventListener('click', async () => {
+  try { const response = await PrincessApi.request('/api/auth/forgot-password', { method:'POST', body:JSON.stringify({email:document.querySelector('#reset-email').value}) }); if (response.resetCode) document.querySelector('#reset-code').value = response.resetCode; feedback(response.message, 'success'); }
+  catch (error) { feedback(error.message, 'error'); }
 });
 document.querySelector('#reset-panel').addEventListener('submit', async event => {
   event.preventDefault();

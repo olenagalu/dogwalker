@@ -21,11 +21,11 @@ public record AuthResponseDto(string Token, DateTimeOffset ExpiresAt, UserProfil
 
 public record ForgotPasswordDto([Required, EmailAddress] string Email);
 
-public record ForgotPasswordResponseDto(string Message, string? ResetToken = null);
+public record ForgotPasswordResponseDto(string Message, string? ResetCode = null);
 
 public record ResetPasswordDto(
     [Required, EmailAddress] string Email,
-    [Required] string Token,
+    [Required, RegularExpression("^[0-9]{6}$", ErrorMessage = "Enter the 6-digit verification code.")] string Code,
     [Required, MinLength(8), MaxLength(100)] string NewPassword);
 
 public record UpdateProfileDto(
