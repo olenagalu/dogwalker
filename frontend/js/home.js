@@ -28,3 +28,26 @@ if (ownerPhoto) {
   ownerPhoto.addEventListener('error', hideOwnerPhoto);
   if (ownerPhoto.complete) ownerPhoto.naturalWidth > 0 ? showOwnerPhoto() : hideOwnerPhoto();
 }
+
+PrincessApi.request('/api/site-content/owner-profile').then(profile => {
+  document.querySelector('#home-owner-section-label').textContent = profile.sectionLabel;
+  document.querySelector('#home-owner-section-title').textContent = profile.sectionTitle;
+  document.querySelector('#home-owner-greeting').textContent = profile.greeting;
+  document.querySelector('#home-owner-headline').textContent = profile.headline;
+  const biography = document.querySelector('#home-owner-biography');
+  biography.replaceChildren();
+  profile.biography.split(/\n\s*\n/).filter(Boolean).forEach(text => {
+    const paragraph = document.createElement('p');
+    paragraph.textContent = text;
+    biography.append(paragraph);
+  });
+  document.querySelector('#home-owner-phone').textContent = profile.phone;
+  document.querySelector('#home-owner-phone-link').href = `tel:${profile.phone.replace(/[^+\d]/g, '')}`;
+  document.querySelector('#home-owner-email').textContent = profile.email;
+  document.querySelector('#home-owner-email-link').href = `mailto:${profile.email}`;
+  document.querySelector('#home-owner-instagram').textContent = profile.instagramLabel;
+  document.querySelector('#home-owner-instagram-link').href = profile.instagramUrl;
+  document.querySelector('#home-owner-area').textContent = profile.serviceArea;
+  document.querySelector('#home-owner-map-link').href = profile.mapUrl;
+  document.querySelector('#home-owner-contact-button').textContent = profile.contactButtonText;
+}).catch(() => {});

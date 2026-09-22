@@ -12,6 +12,59 @@ namespace PawsAndPaths.Api.Tests;
 public class SiteContentControllerTests
 {
     [Fact]
+    public void UpdateOwnerProfile_IsOwnerOnly()
+    {
+        var method = typeof(SiteContentController).GetMethod(nameof(SiteContentController.UpdateOwnerProfile));
+        var authorize = method?.GetCustomAttribute<AuthorizeAttribute>();
+
+        Assert.NotNull(authorize);
+        Assert.Equal(AppRoles.Owner, authorize.Roles);
+    }
+
+    [Fact]
+    public async Task GetOwnerProfile_ReturnsHomepageDefaults_WhenNoContentWasSaved()
+    {
+        await using var db = CreateDatabase();
+
+        var result = await Controller(db).GetOwnerProfile(CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var profile = Assert.IsType<OwnerProfileContentRequest>(ok.Value);
+        Assert.Equal("Your dog’s devoted walking companion.", profile.Headline);
+        Assert.Equal("(561) 788-3531", profile.Phone);
+        Assert.Equal("Boca Raton, Florida", profile.ServiceArea);
+    }
+
+    [Fact]
+    public async Task UpdateOwnerProfile_SavesAllFields_AndKeepsDashboardDescriptionInSync()
+    {
+        await using var db = CreateDatabase();
+        var controller = Controller(db);
+        var request = Profile(biography: "Julia's updated biography.", phone: "(561) 555-0100");
+
+        var result = await controller.UpdateOwnerProfile(request, CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(13, await db.SiteContent.CountAsync());
+        Assert.Equal("(561) 555-0100", (await db.SiteContent.SingleAsync(x => x.Key == "owner-phone")).Text);
+        Assert.Equal("Julia's updated biography.", (await db.SiteContent.SingleAsync(x => x.Key == "owner-biography")).Text);
+        Assert.Equal("Julia's updated biography.", (await db.SiteContent.SingleAsync(x => x.Key == "owner-description")).Text);
+    }
+
+    [Fact]
+    public async Task UpdateOwnerProfile_RejectsNonHttpsPublicLinks()
+    {
+        await using var db = CreateDatabase();
+        var controller = Controller(db);
+        var request = Profile(instagramUrl: "javascript:alert(1)");
+
+        var result = await controller.UpdateOwnerProfile(request, CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Empty(db.SiteContent);
+    }
+
+    [Fact]
     public void UpdateAboutPhoto_IsOwnerOnly()
     {
         var method = typeof(SiteContentController).GetMethod(nameof(SiteContentController.UpdateAboutPhoto));
@@ -82,6 +135,23 @@ public class SiteContentControllerTests
 
     private static AppDbContext CreateDatabase() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+
+    private static OwnerProfileContentRequest Profile(
+        string biography = "Biography",
+        string phone = "(561) 555-0199",
+        string instagramUrl = "https://www.instagram.com/princess___dogwalker/") => new(
+        "Section label",
+        "Section title",
+        "Greeting",
+        "Headline",
+        biography,
+        phone,
+        "julia@example.com",
+        "@princess___dogwalker",
+        instagramUrl,
+        "Boca Raton, Florida",
+        "https://www.google.com/maps/place/Boca+Raton,+FL/",
+        "Send a message");
 
     private static SiteContentController Controller(AppDbContext db) => new(db)
     {
