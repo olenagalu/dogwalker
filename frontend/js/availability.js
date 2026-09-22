@@ -8,6 +8,7 @@ const scheduleService = document.querySelector('#schedule-service');
 const timelineList = document.querySelector('#timeline-list');
 const viewButtons = [...document.querySelectorAll('[data-calendar-view]')];
 const calendarViewControl = document.querySelector('#calendar-view-control');
+const calendarPanel = document.querySelector('#availability-calendar-panel');
 const overnightRangeForm = document.querySelector('#overnight-range-form');
 const overnightCheckIn = document.querySelector('#overnight-check-in');
 const overnightCheckout = document.querySelector('#overnight-checkout');
@@ -68,11 +69,9 @@ overnightRangeForm.addEventListener('submit', async event => {
   const service = selectedService();
   const button = event.currentTarget.querySelector('button[type="submit"]');
   button.disabled = true;
-  showOvernightResult('Checking Julia’s care schedule…', null);
+  showOvernightResult('Checking these dates…', null);
   try {
     overnightAvailability = await PrincessApi.request(`/api/availability/overnight?checkIn=${overnightCheckIn.value}&checkout=${overnightCheckout.value}&serviceId=${service.id}`);
-    calendarDate = parseDate(overnightCheckIn.value);
-    await renderCalendar();
     renderOvernightResult(service);
   } catch (error) {
     showOvernightResult(error.message, false);
@@ -84,6 +83,7 @@ overnightRangeForm.addEventListener('submit', async event => {
 function toggleOvernightTools() {
   const overnight = Boolean(selectedService()?.isOvernightStay);
   overnightRangeForm.hidden = !overnight;
+  calendarPanel.hidden = overnight;
   calendarViewControl.hidden = overnight;
   document.querySelector('#availability-service-hint').textContent = overnight
     ? 'Enter check-in and checkout dates to check the complete stay.'
@@ -120,8 +120,8 @@ function renderOvernightResult(service) {
   heading.textContent = available ? 'These dates are available' : 'These dates need a special request';
   const copy = document.createElement('p');
   copy.textContent = available
-    ? 'Julia’s standard overnight care windows are open for the full stay.'
-    : 'Some care windows overlap Julia’s current schedule. She may be able to adapt or introduce someone she trusts. You decide whether to proceed with that person or seek another option.';
+    ? 'Julia is available for the complete overnight stay.'
+    : 'Some of these dates overlap Julia’s existing bookings or unavailable time. She may be able to adapt or introduce someone she trusts.';
   const link = document.createElement('a');
   link.className = 'button button-clay';
   if (available) {
@@ -159,6 +159,10 @@ function navigateCalendar(direction) {
 async function renderCalendar() {
   const service = selectedService();
   if (!service) return;
+  if (service.isOvernightStay) {
+    schedulePanel.hidden = true;
+    return;
+  }
   schedulePanel.hidden = true;
   calendarGrid.innerHTML = '<div class="empty-state">Checking Julia’s calendar…</div>';
   const range = getRange(calendarView, formatIso(calendarDate));
@@ -168,19 +172,15 @@ async function renderCalendar() {
 
   try {
     if (calendarView === 'month') {
-      const slots = service.isOvernightStay
-        ? []
-        : await PrincessApi.request(`/api/availability/slots?from=${range.from}&to=${range.to}&serviceId=${service.id}`);
+      const slots = await PrincessApi.request(`/api/availability/slots?from=${range.from}&to=${range.to}&serviceId=${service.id}`);
       const openDates = new Set(slots.map(slot => slot.date));
       calendarGrid.replaceChildren(renderMonthGrid(calendarDate.getFullYear(), calendarDate.getMonth(), openDates));
       return;
     }
 
     const dates = datesBetween(range.from, range.to);
-    const schedules = service.isOvernightStay
-      ? dates.map(() => [])
-      : await Promise.all(dates.map(date =>
-        PrincessApi.request(`/api/availability/day?date=${date}&serviceId=${service.id}`)));
+    const schedules = await Promise.all(dates.map(date =>
+      PrincessApi.request(`/api/availability/day?date=${date}&serviceId=${service.id}`)));
     renderWeekSchedule(dates, schedules, service);
   } catch (error) {
     calendarGrid.replaceChildren(empty(error.message));
@@ -228,14 +228,14 @@ function renderWeekSchedule(dates, schedules, service) {
 
     const label = document.createElement('p');
     label.className = 'week-taken-label';
-    label.textContent = service.isOvernightStay ? 'Overnight care' : 'Taken times';
+    label.textContent = 'Taken times';
     const takenList = document.createElement('div');
     takenList.className = 'week-taken-list';
     const ranges = summarizeTakenTimes(segments);
     if (!ranges.length) {
       const open = document.createElement('span');
       open.className = 'week-all-open';
-      open.textContent = service.isOvernightStay ? 'Choose check-in' : 'No times taken';
+      open.textContent = 'No times taken';
       takenList.append(open);
     } else {
       ranges.forEach(range => takenList.append(takenTime(range)));
@@ -245,7 +245,7 @@ function renderWeekSchedule(dates, schedules, service) {
     action.type = 'button';
     action.className = 'week-day-action';
     action.disabled = date < localToday;
-    action.textContent = service.isOvernightStay ? 'Choose dates' : 'View & request times';
+    action.textContent = 'View & request times';
     action.addEventListener('click', () => selectDate(date));
     column.append(header, label, takenList, action);
     grid.append(column);
@@ -312,20 +312,11 @@ function dateButton(date, openDates) {
   const number = document.createElement('strong');
   number.textContent = value.getDate();
   const status = document.createElement('span');
-  const service = selectedService();
-  const inOvernightRange = service?.isOvernightStay && overnightAvailability
-    && date >= overnightAvailability.checkIn && date <= overnightAvailability.checkout;
-  const overnightConflict = inOvernightRange && overnightAvailability.unavailableDates.includes(date);
-  if (inOvernightRange) {
-    button.classList.add(overnightConflict ? 'has-conflict' : 'has-openings', 'is-overnight-range');
-  }
   status.textContent = isPast ? 'Past'
-    : service?.isOvernightStay
-      ? inOvernightRange ? overnightConflict ? 'Not available' : 'Available' : 'Enter dates above'
-      : openDates.has(date) ? 'Open times' : 'View schedule';
+    : openDates.has(date) ? 'Open times' : 'View schedule';
   button.append(number, status);
   button.setAttribute('aria-label', `${formatLongDate(date)}${openDates.has(date) ? ', open times available' : ''}`);
-  if (!service?.isOvernightStay) button.addEventListener('click', () => selectDate(date));
+  button.addEventListener('click', () => selectDate(date));
   return button;
 }
 
@@ -338,24 +329,7 @@ async function selectDate(date) {
   scheduleDate.textContent = formatLongDate(date);
   timelineList.innerHTML = '<div class="empty-state">Checking this day…</div>';
   const service = selectedService();
-  scheduleService.textContent = service.isOvernightStay
-    ? `${service.name} · Multi-day overnight care`
-    : `${service.name} · ${service.durationMinutes} minutes`;
-
-  if (service.isOvernightStay) {
-    const card = document.createElement('div');
-    card.className = 'overnight-date-choice';
-    const copy = document.createElement('p');
-    copy.textContent = 'Use this as your check-in date, then choose the checkout date before sending your request.';
-    const link = document.createElement('a');
-    link.className = 'button button-clay';
-    link.href = bookingUrl(service.id, date);
-    link.textContent = 'Choose overnight dates';
-    card.append(copy, link);
-    timelineList.replaceChildren(card);
-    schedulePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
-  }
+  scheduleService.textContent = `${service.name} · ${service.durationMinutes} minutes`;
 
   try {
     const segments = await PrincessApi.request(`/api/availability/day?date=${date}&serviceId=${service.id}`);

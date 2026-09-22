@@ -49,7 +49,7 @@
         </div>
 
         <form class="overnight-range-form" id="overnight-range-form" hidden>
-          <div><span class="eyebrow">Check an overnight stay</span><h2>Which dates do you need?</h2><p>Enter check-in and checkout first. The calendar will show whether Julia’s standard overnight care windows are open.</p></div>
+          <div><span class="eyebrow">Check an overnight stay</span><h2>Which dates do you need?</h2><p>Enter check-in and checkout to see whether Julia is available for the complete stay.</p></div>
           <div class="overnight-range-fields">
             <div class="field"><label for="overnight-check-in">Check-in</label><input type="date" id="overnight-check-in" required></div>
             <div class="field"><label for="overnight-checkout">Checkout</label><input type="date" id="overnight-checkout" required></div>
@@ -58,7 +58,7 @@
           <div class="overnight-range-result" id="overnight-range-result" role="status" hidden></div>
         </form>
 
-        <div class="public-calendar-panel">
+        <div class="public-calendar-panel" id="availability-calendar-panel">
           <div class="public-calendar-toolbar">
             <button class="calendar-nav-button" id="public-calendar-prev" type="button" aria-label="Previous month">←</button>
             <div class="calendar-heading">
@@ -97,6 +97,6 @@
   </footer>
   <script src="js/api.js"></script>
   <script src="js/main.js?v=20260912-site-logo"></script>
-  <script src="js/availability.js?v=20260912-availability-calendar"></script>
+  <script src="js/availability.js?v=20260921-no-overnight-schedule"></script>
 </body>
 </html>

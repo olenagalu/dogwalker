@@ -208,6 +208,7 @@ textarea { min-height: 105px; resize: vertical; }
 .calendar-view-button:hover, .calendar-view-button:focus-visible { color: var(--forest); }
 .calendar-view-button.active { color: white; background: var(--forest); }
 .public-calendar-panel { min-width: 0; padding: clamp(1rem,3vw,1.5rem); background: var(--paper); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+.public-calendar-panel[hidden] { display: none !important; }
 .public-calendar-toolbar { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 1rem; margin-bottom: 1rem; }
 .public-calendar-toolbar .calendar-heading { margin: 0; text-align: center; }
 .public-calendar-toolbar .calendar-heading h2 { margin-bottom: 0; }
