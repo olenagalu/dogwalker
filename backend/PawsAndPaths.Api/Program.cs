@@ -88,6 +88,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IWelcomeEmailSender, WelcomeEmailSender>();
 builder.Services.AddScoped<IPasswordResetEmailSender, PasswordResetEmailSender>();
 builder.Services.AddScoped<IAccountDecisionEmailSender, AccountDecisionEmailSender>();
+builder.Services.AddScoped<IBookingDecisionEmailSender, BookingDecisionEmailSender>();
 builder.Services.AddScoped<IOwnerNotificationEmailSender, OwnerNotificationEmailSender>();
 builder.Services.AddScoped<ICustomerManagementService, CustomerManagementService>();
 builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();

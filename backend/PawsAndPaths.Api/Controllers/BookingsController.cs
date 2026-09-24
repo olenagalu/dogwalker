@@ -14,6 +14,7 @@ namespace PawsAndPaths.Api.Controllers;
 public class BookingsController(
     AppDbContext db,
     IBookingService bookingService,
+    IBookingDecisionEmailSender bookingDecisionEmailSender,
     IOwnerNotificationEmailSender notificationSender,
     ILogger<BookingsController> logger) : ControllerBase
 {
@@ -96,8 +97,32 @@ public class BookingsController(
     {
         var allowed = new[] { BookingStatus.Confirmed, BookingStatus.Declined, BookingStatus.Cancelled, BookingStatus.Completed };
         if (!allowed.Contains(request.Status)) return BadRequest(new { message = "Invalid owner status change." });
+        var previousStatus = await db.Bookings.AsNoTracking()
+            .Where(item => item.Id == id)
+            .Select(item => (BookingStatus?)item.Status)
+            .SingleOrDefaultAsync(cancellationToken);
         var (booking, error) = await bookingService.ChangeStatusAsync(id, request.Status, cancellationToken);
-        return booking is null ? Conflict(new { message = error }) : Ok(booking.ToDto());
+        if (booking is null) return Conflict(new { message = error });
+        if (request.Status == BookingStatus.Declined && previousStatus != BookingStatus.Declined
+            && !string.IsNullOrWhiteSpace(booking.User.Email))
+        {
+            try
+            {
+                await bookingDecisionEmailSender.SendDeclinedAsync(
+                    new BookingDeclinedNotification(
+                        booking.User.Email,
+                        booking.User.FullName,
+                        booking.Dog.Name,
+                        booking.ServiceOffering.Name,
+                        booking.Date), cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception,
+                    "Declined-booking email could not be sent for booking {BookingId}.", booking.Id);
+            }
+        }
+        return Ok(booking.ToDto());
     }
 
     [HttpPut("{id:int}/cancel")]

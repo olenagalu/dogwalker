@@ -539,12 +539,31 @@ textarea { min-height: 105px; resize: vertical; }
 .profile-inner-form { margin-top:1.5rem; box-shadow:none; }
 .profile-inner-form[hidden] { display:none !important; }
 
+.owner-profile-shell { max-width:1440px; }
+.owner-profile-avatar { font-size:1.25rem; letter-spacing:.04em; }
+.owner-profile-layout { grid-template-columns:minmax(260px,.55fr) minmax(0,1.75fr); }
+.owner-wide-panel { min-width:0; }
+.owner-stat-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.owner-stat-card { display:flex; min-height:130px; padding:1.25rem; flex-direction:column; align-items:flex-start; justify-content:center; color:var(--forest); background:linear-gradient(145deg,#fff7fa,#fff); border:1px solid var(--line); border-radius:18px; cursor:pointer; text-align:left; }
+.owner-stat-card:hover,.owner-stat-card:focus-visible { border-color:#d77ba4; box-shadow:0 10px 30px rgba(87,39,67,.1); transform:translateY(-2px); }
+.owner-stat-card strong { font-family:'Fraunces',serif; font-size:2.4rem; line-height:1; }
+.owner-stat-card span { margin-top:.5rem; color:var(--muted); font-weight:700; }
+.owner-quick-links { display:grid; gap:.75rem; }
+.owner-quick-links a { display:flex; align-items:center; justify-content:space-between; padding:1rem 1.1rem; color:var(--forest); background:#fff7fa; border:1px solid var(--line); border-radius:14px; font-weight:800; text-decoration:none; }
+.owner-quick-links a:hover,.owner-quick-links a:focus-visible { color:#a8325d; border-color:#d77ba4; }
+.owner-history-summary { display:flex; flex-wrap:wrap; gap:.75rem; margin-bottom:1.25rem; }
+.owner-history-summary span { padding:.75rem 1rem; color:var(--muted); background:#fff7fa; border:1px solid var(--line); border-radius:999px; }
+.owner-history-summary strong { color:var(--forest); }
+.owner-profile-page .owner-availability-tools { margin:0; padding-top:0; border-top:0; }
+.owner-profile-page .owner-booking-tools { margin-bottom:2rem; }
+
 @media (max-width:850px){
   .customer-profile-summary { grid-template-columns:auto 1fr; }
   .customer-profile-summary .button { grid-column:1 / -1; width:100%; text-align:center; }
   .customer-profile-layout { grid-template-columns:1fr; }
   .profile-settings-menu { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .profile-setting-button { border-right:1px solid var(--line); }
+  .owner-profile-layout { grid-template-columns:1fr; }
 }
 @media (max-width:600px){
   .customer-profile-summary { grid-template-columns:1fr; text-align:center; }
@@ -552,4 +571,5 @@ textarea { min-height: 105px; resize: vertical; }
   .profile-settings-menu,.profile-overview-grid,.dog-card-grid { grid-template-columns:1fr; }
   .profile-panel { min-height:0; padding:1.25rem; }
   .profile-panel-heading { flex-direction:column; }
+  .owner-stat-grid { grid-template-columns:1fr; }
 }

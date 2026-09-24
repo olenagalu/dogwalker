@@ -4,12 +4,28 @@ let ownerServices=[]; let ownerCustomers=[]; let ownerBookings=[]; let rules=[];
 let ownerCalendarDate=new Date();
 let ownerOvernightDate=new Date();
 let ownerCalendarView='month';
+initializeOwnerPanels();
 document.querySelector('#refresh-owner').addEventListener('click',loadOwner);
-async function loadOwner(){try{await loadBookings();await Promise.all([loadServices(),loadRules(),loadCustomers(),loadRequests()]);renderOwnerCalendar();renderOvernightCalendar();}catch(error){feedback(error.message,'error');}}
+function initializeOwnerPanels(){
+  document.querySelectorAll('[data-owner-panel]').forEach(button=>button.addEventListener('click',()=>showOwnerPanel(button.dataset.ownerPanel)));
+  document.querySelectorAll('[data-open-owner-panel]').forEach(button=>button.addEventListener('click',()=>showOwnerPanel(button.dataset.openOwnerPanel)));
+  const aliases={'owner-messages':'requests','owner-bookings':'schedule','owner-overnight':'overnight','owner-customers':'customers'};
+  const requested=location.hash.replace('#','');
+  showOwnerPanel(document.querySelector(`[data-owner-panel-name="${aliases[requested]||requested}"]`)?(aliases[requested]||requested):'overview',false);
+}
+function showOwnerPanel(name,updateHash=true){
+  document.querySelectorAll('[data-owner-panel-name]').forEach(panel=>{panel.hidden=panel.dataset.ownerPanelName!==name;});
+  document.querySelectorAll('[data-owner-panel]').forEach(button=>button.classList.toggle('active',button.dataset.ownerPanel===name));
+  if(updateHash)history.replaceState(null,'',`#${name}`);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+async function loadOwner(){try{await Promise.all([loadServices(),loadRules(),loadCustomers()]);await loadBookings();renderOwnerCalendar();renderOvernightCalendar();}catch(error){feedback(error.message,'error');}}
 async function loadRequests(){
   const bookingList=document.querySelector('#owner-booking-request-list');
   bookingList.replaceChildren();
   const pending=ownerBookings.filter(item=>item.status==='Pending').sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+  document.querySelector('#owner-menu-request-count').textContent=pending.length;
+  document.querySelector('#owner-overview-request-count').textContent=pending.length;
   if(!pending.length)bookingList.append(empty('No booking requests are waiting for approval.'));
   pending.forEach(item=>bookingList.append(bookingRequestCard(item)));
 }
@@ -26,17 +42,31 @@ function bookingRequestCard(item){
   return card;
 }
 async function decideBookingRequest(id,status){
-  if(status==='Declined'&&!confirm('Decline this booking request?'))return;
+  if(status==='Declined'&&!confirm('Decline this booking request and email the customer?'))return;
   try{
     await PrincessApi.request(`/api/bookings/${id}/status`,{method:'PUT',body:JSON.stringify({status})});
     await loadBookings();
-    await loadRequests();
-    feedback(status==='Confirmed'?'Booking request approved.':'Booking request declined.','success');
+    feedback(status==='Confirmed'?'Booking approved and added to Schedule.':'Booking declined and the customer notification was processed.','success');
   }catch(error){feedback(error.message,'error');}
 }
-async function loadBookings(){ownerBookings=await PrincessApi.request('/api/bookings/admin');const list=document.querySelector('#owner-booking-list');list.replaceChildren();if(!ownerBookings.length){list.append(empty('No bookings yet.'));renderOwnerCalendar();renderOvernightCalendar();return;}ownerBookings.forEach(item=>list.append(ownerBookingCard(item)));renderOwnerCalendar();renderOvernightCalendar();}
-function ownerBookingCard(item,showStatusControl=true){const card=document.createElement('article');card.className=`appointment-card ${serviceColorClass(item.serviceId)}`;card.dataset.status=item.status;card.style.borderLeftColor='var(--booking-color)';const head=document.createElement('div');head.className='appointment-head';const copy=document.createElement('div');const title=document.createElement('h3');title.textContent=`${item.dogName} · ${item.serviceName}`;const nights=item.isOvernightStay?daysBetween(item.date,item.endDate):1;const when=item.isOvernightStay?`${formatDate(item.date)}–${formatDate(item.endDate)} · ${nights} night${nights===1?'':'s'} · Total $${Number(item.price).toFixed(2)}`:`${formatDate(item.date)} at ${formatTime(item.startTime)} · $${Number(item.price).toFixed(2)}`;const meta=document.createElement('p');meta.textContent=`${when} · ${item.customerName} · ${item.customerEmail}${item.customerPhone?` · ${item.customerPhone}`:''}`;copy.append(title,meta);head.append(copy);if(showStatusControl){const select=document.createElement('select');select.setAttribute('aria-label',`Status for ${item.dogName}`);['Pending','Confirmed','Completed','Cancelled','Declined'].forEach(status=>{const option=new Option(status,status,status===item.status,status===item.status);select.add(option);});select.addEventListener('change',()=>changeBookingStatus(item.id,select));head.append(select);}card.append(head);const badge=document.createElement('span');badge.className=`status-badge status-${item.status.toLowerCase()}`;badge.textContent=item.status;card.append(badge);if(item.specialInstructions){const notes=document.createElement('p');notes.textContent=`Instructions: ${item.specialInstructions}`;card.append(notes);}return card;}
-async function changeBookingStatus(id,select){select.disabled=true;try{await PrincessApi.request(`/api/bookings/${id}/status`,{method:'PUT',body:JSON.stringify({status:select.value})});feedback('Booking status updated.','success');await loadBookings();await loadRequests();}catch(error){feedback(error.message,'error');await loadBookings();}finally{select.disabled=false;}}
+async function loadBookings(){
+  ownerBookings=await PrincessApi.request('/api/bookings/admin');
+  const confirmed=ownerBookings.filter(item=>item.status==='Confirmed').sort((a,b)=>a.date.localeCompare(b.date)||a.startTime.localeCompare(b.startTime));
+  const history=ownerBookings.filter(item=>item.status==='Completed'||item.status==='Declined').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const list=document.querySelector('#owner-booking-list');list.replaceChildren();
+  if(!confirmed.length)list.append(empty('No confirmed bookings are on the schedule.'));
+  confirmed.forEach(item=>list.append(ownerBookingCard(item,true)));
+  const historyList=document.querySelector('#owner-booking-history');historyList.replaceChildren();
+  if(!history.length)historyList.append(empty('No completed or declined bookings yet.'));
+  history.forEach(item=>historyList.append(ownerBookingCard(item,false)));
+  document.querySelector('#owner-overview-schedule-count').textContent=confirmed.length;
+  document.querySelector('#owner-overview-history-count').textContent=history.length;
+  document.querySelector('#owner-completed-count').textContent=history.filter(item=>item.status==='Completed').length;
+  document.querySelector('#owner-declined-count').textContent=history.filter(item=>item.status==='Declined').length;
+  await loadRequests();renderOwnerCalendar();renderOvernightCalendar();
+}
+function ownerBookingCard(item,showStatusControl=true){const card=document.createElement('article');card.className=`appointment-card ${serviceColorClass(item.serviceId)}`;card.dataset.status=item.status;card.style.borderLeftColor='var(--booking-color)';const head=document.createElement('div');head.className='appointment-head';const copy=document.createElement('div');const title=document.createElement('h3');title.textContent=`${item.dogName} · ${item.serviceName}`;const nights=item.isOvernightStay?daysBetween(item.date,item.endDate):1;const when=item.isOvernightStay?`${formatDate(item.date)}–${formatDate(item.endDate)} · ${nights} night${nights===1?'':'s'} · Total $${Number(item.price).toFixed(2)}`:`${formatDate(item.date)} at ${formatTime(item.startTime)} · $${Number(item.price).toFixed(2)}`;const meta=document.createElement('p');meta.textContent=`${when} · ${item.customerName} · ${item.customerEmail}${item.customerPhone?` · ${item.customerPhone}`:''}`;copy.append(title,meta);head.append(copy);if(showStatusControl){const select=document.createElement('select');select.setAttribute('aria-label',`Status for ${item.dogName}`);['Confirmed','Completed','Cancelled'].forEach(status=>{const option=new Option(status,status,status===item.status,status===item.status);select.add(option);});select.addEventListener('change',()=>changeBookingStatus(item.id,select));head.append(select);}card.append(head);const badge=document.createElement('span');badge.className=`status-badge status-${item.status.toLowerCase()}`;badge.textContent=item.status;card.append(badge);if(item.specialInstructions){const notes=document.createElement('p');notes.textContent=`Instructions: ${item.specialInstructions}`;card.append(notes);}return card;}
+async function changeBookingStatus(id,select){select.disabled=true;try{await PrincessApi.request(`/api/bookings/${id}/status`,{method:'PUT',body:JSON.stringify({status:select.value})});feedback(select.value==='Completed'?'Booking completed and moved to History.':'Booking status updated.','success');await loadBookings();}catch(error){feedback(error.message,'error');await loadBookings();}finally{select.disabled=false;}}
 async function loadServices(){ownerServices=await PrincessApi.request('/api/services?includeInactive=true');const select=document.querySelector('#owner-book-service');const selected=select.value;select.innerHTML='<option value="">Choose a service</option>';ownerServices.filter(service=>service.isActive).forEach(service=>select.add(new Option(`${service.name} · $${Number(service.price).toFixed(2)}${service.isOvernightStay?' / night':''}`,service.id)));select.value=selected;renderOwnerCalendar();}
 const ownerBookCustomer=document.querySelector('#owner-book-customer');
 const ownerBookDog=document.querySelector('#owner-book-dog');
@@ -65,7 +95,7 @@ function setOwnerCalendarView(view){ownerCalendarView=view;document.querySelecto
 function navigateOwnerCalendar(direction){if(ownerCalendarView==='month')ownerCalendarDate=new Date(ownerCalendarDate.getFullYear(),ownerCalendarDate.getMonth()+direction,1);else ownerCalendarDate=new Date(ownerCalendarDate.getFullYear(),ownerCalendarDate.getMonth(),ownerCalendarDate.getDate()+(7*direction));renderOwnerCalendar();}
 function serviceColorClass(serviceId){const index=ownerServices.findIndex(service=>service.id===serviceId);return `booking-color-${(index<0?Number(serviceId):index)%6}`;}
 function bookingWindows(item){if(!item.isOvernightStay||!item.endDate)return[{date:item.date,start:item.startTime,end:item.endTime,label:''}];const windows=[];let date=new Date(`${item.date}T00:00:00`);const end=new Date(`${item.endDate}T00:00:00`);while(date<end){windows.push({date:formatIso(date),start:'00:00',end:'23:59',label:'Overnight'});date.setDate(date.getDate()+1);}return windows;}
-function activeDayBookings(){return ownerBookings.filter(item=>!item.isOvernightStay&&!['Cancelled','Declined'].includes(item.status));}
+function activeDayBookings(){return ownerBookings.filter(item=>!item.isOvernightStay&&item.status==='Confirmed');}
 function rulesForDate(date){const parsed=new Date(`${date}T00:00:00`);return rules.filter(rule=>rule.specificDate===date||(rule.dayOfWeek!==null&&rule.dayOfWeek!==undefined&&Number(rule.dayOfWeek)===parsed.getDay()));}
 function renderOwnerCalendar(){
   const calendar=document.querySelector('#owner-calendar-grid');
@@ -120,7 +150,7 @@ function renderOvernightCalendar(){
   document.querySelector('#owner-overnight-month').textContent=new Intl.DateTimeFormat('en-US',{month:'long',year:'numeric'}).format(new Date(year,month,1));
   calendar.replaceChildren();appendWeekdayLabels(calendar);
   for(let blank=0;blank<new Date(year,month,1).getDay();blank+=1){const cell=document.createElement('div');cell.className='owner-calendar-day is-empty';calendar.append(cell);}
-  const overnight=ownerBookings.filter(item=>item.isOvernightStay&&item.endDate&&!['Cancelled','Declined'].includes(item.status));const days=new Date(year,month+1,0).getDate();
+  const overnight=ownerBookings.filter(item=>item.isOvernightStay&&item.endDate&&item.status==='Confirmed');const days=new Date(year,month+1,0).getDate();
   for(let day=1;day<=days;day+=1){const date=formatIso(new Date(year,month,day));const cell=document.createElement('div');cell.className='owner-calendar-day';const number=document.createElement('span');number.className='calendar-day-number';number.textContent=day;cell.append(number);overnight.filter(item=>item.date<=date&&item.endDate>date).forEach(item=>{const stay=document.createElement('div');stay.className=`owner-calendar-event overnight-event ${serviceColorClass(item.serviceId)}`;stay.textContent=`${item.dogName} · ${item.customerName}`;stay.title=`${item.serviceName} · ${formatDate(item.date)}–${formatDate(item.endDate)} · ${item.status}`;cell.append(stay);});calendar.append(cell);}
 }
 const ruleDate=document.querySelector('#rule-date');
@@ -134,6 +164,7 @@ document.querySelector('#availability-rule-form').addEventListener('submit',asyn
 function editRule(rule){document.querySelector('#rule-id').value=rule.id;document.querySelector('#rule-form-title').textContent='Edit unavailable time';ruleDate.value=rule.specificDate||'';const allDay=rule.startTime.startsWith('00:00')&&rule.endTime.startsWith('23:59');document.querySelector('#rule-block-type').value=allDay?'day':'hours';document.querySelector('#rule-start').value=rule.startTime;document.querySelector('#rule-end').value=rule.endTime;document.querySelector('#rule-notes').value=rule.notes;toggleRuleTimes();document.querySelector('#availability-rule-form').scrollIntoView({behavior:'smooth'});}function clearRule(){document.querySelector('#availability-rule-form').reset();ruleDate.value=ruleDate.min;document.querySelector('#rule-id').value='';document.querySelector('#rule-form-title').textContent='Block an unavailable date';toggleRuleTimes();}document.querySelector('#clear-rule').addEventListener('click',clearRule);async function deleteRule(id){if(!confirm('Make this date and time available again?'))return;try{await PrincessApi.request(`/api/availability/${id}`,{method:'DELETE'});await loadRules();feedback('That date and time are available again.','success');}catch(error){feedback(error.message,'error');}}
 async function loadCustomers(){
   ownerCustomers=await PrincessApi.request('/api/users/customers');
+  document.querySelector('#owner-overview-customer-count').textContent=ownerCustomers.length;
   const list=document.querySelector('#owner-customer-list');
   const selected=ownerBookCustomer.value;
   list.replaceChildren();
