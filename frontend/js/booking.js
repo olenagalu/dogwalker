@@ -57,7 +57,18 @@ form.addEventListener('submit', event => {
 document.querySelector('#edit-booking').addEventListener('click', () => { review.hidden = true; form.hidden = false; });
 document.querySelector('#confirm-booking').addEventListener('click', async event => {
   event.currentTarget.disabled = true;
-  try { const booking = await PrincessApi.request('/api/bookings', { method:'POST', body:JSON.stringify({ ...draft, dogId:Number(draft.dogId), serviceId:Number(draft.serviceId) }) }); location.href = `dashboard.html?booked=${booking.id}`; }
+  try {
+    // ASP.NET date parsing accepts either an ISO date or null for an optional
+    // end date. An empty string causes the entire booking request to be rejected.
+    const payload={
+      ...draft,
+      dogId:Number(draft.dogId),
+      serviceId:Number(draft.serviceId),
+      endDate:draft.endDate||null
+    };
+    const booking = await PrincessApi.request('/api/bookings', { method:'POST', body:JSON.stringify(payload) });
+    location.href = `dashboard.html?booked=${booking.id}`;
+  }
   catch (error) { review.hidden = true; form.hidden = false; feedback(error.message, 'error'); loadSlots(); }
   finally { event.currentTarget.disabled = false; }
 });
