@@ -2,6 +2,42 @@ const currentUser = typeof PrincessApi !== 'undefined' ? PrincessApi.user() : nu
 const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 const nav = document.querySelector('.nav-links');
 
+initializePasswordToggles();
+
+function initializePasswordToggles() {
+  document.querySelectorAll('input[type="password"]').forEach(input => {
+    if (input.parentElement?.classList.contains('password-input')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'password-input';
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.append(input);
+
+    const toggle = document.createElement('button');
+    toggle.className = 'password-toggle';
+    toggle.type = 'button';
+    toggle.setAttribute('aria-label', 'Show password');
+    toggle.setAttribute('aria-controls', input.id);
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.innerHTML = `
+      <svg class="password-icon password-icon-show" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+        <circle cx="12" cy="12" r="2.75"></circle>
+      </svg>
+      <svg class="password-icon password-icon-hide" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 3l18 18"></path>
+        <path d="M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a15.8 15.8 0 0 1-3.1 3.7M6.3 7.3A16 16 0 0 0 2.5 12s3.5 6 9.5 6c1.5 0 2.9-.4 4.1-1"></path>
+      </svg>`;
+    toggle.addEventListener('click', () => {
+      const shouldShow = input.type === 'password';
+      input.type = shouldShow ? 'text' : 'password';
+      toggle.setAttribute('aria-label', shouldShow ? 'Hide password' : 'Show password');
+      toggle.setAttribute('aria-pressed', String(shouldShow));
+    });
+    wrapper.append(toggle);
+  });
+}
+
 if (nav) {
   if (currentUser?.role === 'Owner') {
     nav.innerHTML = `
