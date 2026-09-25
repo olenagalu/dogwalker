@@ -29,8 +29,11 @@ public class BookingService(AppDbContext db, IAvailabilityService availability) 
         var dog = await db.Dogs.SingleOrDefaultAsync(item => item.Id == request.DogId && item.UserId == userId, cancellationToken);
         if (dog is null) return (null, "The selected dog does not belong to this account.");
         var user = await db.Users.AsNoTracking().SingleOrDefaultAsync(item => item.Id == userId, cancellationToken);
-        if (user is null || user.ApprovalStatus != AccountApprovalStatus.Approved)
-            return (null, "Julia must approve your account and service area before you can book.");
+        if (user is null) return (null, "Customer account not found.");
+        if (user.ApprovalStatus == AccountApprovalStatus.Declined)
+            return (null, "Booking is not available for this service address.");
+        if (string.IsNullOrWhiteSpace(user.ServiceArea) || string.IsNullOrWhiteSpace(user.ServiceAddress))
+            return (null, "Add your service area and address to your profile before booking.");
 
         var service = await db.Services.SingleOrDefaultAsync(item => item.Id == request.ServiceId && item.IsActive, cancellationToken);
         if (service is null) return (null, "The selected service is unavailable.");
@@ -124,6 +127,8 @@ public class BookingService(AppDbContext db, IAvailabilityService availability) 
 
         if (status == BookingStatus.Confirmed)
         {
+            if (booking.User.ApprovalStatus != AccountApprovalStatus.Approved)
+                return (null, "Approve this customer's service area before confirming the booking.");
             foreach (var window in BookingSchedule.Windows(booking))
                 if (!await availability.IsAvailableAsync(window.Date, window.StartTime, window.EndTime, booking.Id, cancellationToken, !booking.IsOvernightStay))
                     return (null, "This booking now conflicts with availability or another active booking.");

@@ -42,13 +42,11 @@ async function loadProfile() {
   document.querySelector('#profile-summary-details').textContent = `${currentProfile.email} · ${currentProfile.serviceArea || 'Service area not added'}`;
   const banner = document.querySelector('#approval-banner');
   const book = document.querySelector('#dashboard-book-button');
-  if (currentProfile.approvalStatus === 'Approved') { banner.hidden = true; book.hidden = false; }
-  else {
-    banner.hidden = false; book.hidden = true;
-    banner.className = `approval-banner ${currentProfile.approvalStatus.toLowerCase()}`;
-    banner.textContent = currentProfile.approvalStatus === 'Pending'
-      ? 'Your account is waiting for Julia’s service-area approval. You can finish your profile and add dogs now.'
-      : 'Julia could not approve this service area. Update your area/address or contact Julia.';
+  banner.hidden = currentProfile.approvalStatus !== 'Declined';
+  book.hidden = currentProfile.approvalStatus === 'Declined';
+  if (!banner.hidden) {
+    banner.className = 'approval-banner declined';
+    banner.textContent = 'Booking is not available for this service address. Update your area/address or contact Julia.';
   }
   if (currentProfile.hasProfilePhoto) {
     const url = await PrincessApi.privateImageUrl('/api/users/me/photo');
@@ -111,7 +109,7 @@ function renderBookings(container, items, canCancel) {
 }
 
 document.querySelector('#profile-form').addEventListener('submit', async event => {
-  event.preventDefault(); try { const user = await PrincessApi.request('/api/users/me', { method:'PUT', body:JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) }); sessionStorage.setItem('princessDogWalkerUser', JSON.stringify(user)); await loadProfile(); feedback('Personal information saved. Julia will review updated service areas.', 'success'); } catch (error) { feedback(error.message, 'error'); }
+  event.preventDefault(); try { const user = await PrincessApi.request('/api/users/me', { method:'PUT', body:JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) }); sessionStorage.setItem('princessDogWalkerUser', JSON.stringify(user)); await loadProfile(); feedback('Personal information saved.', 'success'); } catch (error) { feedback(error.message, 'error'); }
 });
 document.querySelector('#profile-photo-form').addEventListener('submit', async event => {
   event.preventDefault(); const data = new FormData();

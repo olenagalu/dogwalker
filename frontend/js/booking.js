@@ -1,5 +1,5 @@
 const bookingUser = PrincessApi.requireUser();
-if (bookingUser?.role === 'Owner') window.location.replace('owner.html');
+if (bookingUser?.role === 'Owner') window.location.replace(`owner.html${window.location.search}#schedule`);
 const form = document.querySelector('#booking-form');
 const serviceSelect = document.querySelector('#book-service');
 const dogSelect = document.querySelector('#book-dog');

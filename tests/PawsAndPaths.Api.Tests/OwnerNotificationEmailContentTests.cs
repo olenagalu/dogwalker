@@ -31,6 +31,23 @@ public class OwnerNotificationEmailContentTests
     }
 
     [Fact]
+    public void AccountApprovalRequest_IncludesCustomerAndReviewLink()
+    {
+        var message = OwnerNotificationEmailContent.CreateAccountApprovalRequest(
+            new AccountApprovalNotification(
+                "Sam Taylor", "customer@example.com", "561-555-0100", "Boca Raton", "123 Main St"),
+            "owner@example.com", "sender@example.com", "Princess Dog Walker",
+            "https://princess-dog-walker.onrender.com/owner.html#owner-customers");
+
+        Assert.Equal("owner@example.com", message.To.Mailboxes.Single().Address);
+        Assert.Equal("customer@example.com", message.ReplyTo.Mailboxes.Single().Address);
+        Assert.Contains("Account approval needed", message.Subject);
+        Assert.Contains("Boca Raton", message.TextBody);
+        Assert.Contains("123 Main St", message.TextBody);
+        Assert.Contains("owner.html#owner-customers", message.TextBody);
+    }
+
+    [Fact]
     public void BookingRequest_IncludesBookingAndCustomerDetails()
     {
         var message = OwnerNotificationEmailContent.CreateBookingRequest(

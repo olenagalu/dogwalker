@@ -4,7 +4,9 @@ let ownerServices=[]; let ownerCustomers=[]; let ownerBookings=[]; let rules=[];
 let ownerCalendarDate=new Date();
 let ownerOvernightDate=new Date();
 let ownerCalendarView='month';
+let pendingDeclineBookingId=null;
 initializeOwnerPanels();
+initializeBookingDeclineDialog();
 document.querySelector('#refresh-owner').addEventListener('click',loadOwner);
 function initializeOwnerPanels(){
   document.querySelectorAll('[data-owner-panel]').forEach(button=>button.addEventListener('click',()=>showOwnerPanel(button.dataset.ownerPanel)));
@@ -19,7 +21,7 @@ function showOwnerPanel(name,updateHash=true){
   if(updateHash)history.replaceState(null,'',`#${name}`);
   window.scrollTo({top:0,behavior:'smooth'});
 }
-async function loadOwner(){try{await Promise.all([loadServices(),loadRules(),loadCustomers()]);await loadBookings();renderOwnerCalendar();renderOvernightCalendar();}catch(error){feedback(error.message,'error');}}
+async function loadOwner(){try{await Promise.all([loadServices(),loadRules(),loadCustomers()]);await applyOwnerBookingSelection();await loadBookings();renderOwnerCalendar();renderOvernightCalendar();}catch(error){feedback(error.message,'error');}}
 async function loadRequests(){
   const bookingList=document.querySelector('#owner-booking-request-list');
   bookingList.replaceChildren();
@@ -34,20 +36,75 @@ function bookingRequestCard(item){
   card.classList.add('booking-request-card');
   const actions=document.createElement('div');
   actions.className='request-actions';
+  if(item.customerApprovalStatus!=='Approved'){
+    const approvalNote=document.createElement('p');
+    approvalNote.className='hint';
+    approvalNote.textContent='Approve this customer’s service area before confirming the booking.';
+    card.append(approvalNote);
+    const approveCustomer=action('Approve customer first',()=>updateApproval(item.customerId,'Approved'));
+    approveCustomer.className='button button-clay';
+    actions.append(approveCustomer);
+  }
   const approve=action('Approve request',()=>decideBookingRequest(item.id,'Confirmed'));
   approve.className='button button-clay';
-  const decline=action('Decline request',()=>decideBookingRequest(item.id,'Declined'),'danger');
+  approve.disabled=item.customerApprovalStatus!=='Approved';
+  const decline=action('Decline request',()=>openBookingDeclineDialog(item),'danger');
   actions.append(approve,decline);
   card.append(actions);
   return card;
 }
 async function decideBookingRequest(id,status){
-  if(status==='Declined'&&!confirm('Decline this booking request and email the customer?'))return;
   try{
     await PrincessApi.request(`/api/bookings/${id}/status`,{method:'PUT',body:JSON.stringify({status})});
     await loadBookings();
     feedback(status==='Confirmed'?'Booking approved and added to Schedule.':'Booking declined and the customer notification was processed.','success');
   }catch(error){feedback(error.message,'error');}
+}
+function initializeBookingDeclineDialog(){
+  const dialog=document.querySelector('#booking-decline-dialog');
+  const option=document.querySelector('#booking-decline-email-option');
+  option.addEventListener('change',toggleBookingDeclineEmailFields);
+  document.querySelector('#close-booking-decline').addEventListener('click',()=>dialog.close());
+  document.querySelector('#cancel-booking-decline').addEventListener('click',()=>dialog.close());
+  document.querySelector('#booking-decline-form').addEventListener('submit',submitBookingDecline);
+  toggleBookingDeclineEmailFields();
+}
+function openBookingDeclineDialog(item){
+  pendingDeclineBookingId=item.id;
+  const form=document.querySelector('#booking-decline-form');
+  form.reset();
+  document.querySelector('#booking-custom-email-subject').value='About your Princess Dog Walker booking request';
+  toggleBookingDeclineEmailFields();
+  document.querySelector('#booking-decline-dialog').showModal();
+}
+function toggleBookingDeclineEmailFields(){
+  const custom=document.querySelector('#booking-decline-email-option').value==='Custom';
+  const fields=document.querySelector('#booking-custom-email-fields');
+  const subject=document.querySelector('#booking-custom-email-subject');
+  const message=document.querySelector('#booking-custom-email-message');
+  fields.hidden=!custom;
+  document.querySelector('#booking-auto-email-note').hidden=custom;
+  subject.required=custom;message.required=custom;
+}
+async function submitBookingDecline(event){
+  event.preventDefault();
+  if(!event.currentTarget.reportValidity()||!pendingDeclineBookingId)return;
+  const option=document.querySelector('#booking-decline-email-option').value;
+  const payload={status:'Declined',declineEmailOption:option};
+  if(option==='Custom'){
+    payload.customEmailSubject=document.querySelector('#booking-custom-email-subject').value;
+    payload.customEmailMessage=document.querySelector('#booking-custom-email-message').value;
+  }
+  const button=event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled=true;
+  try{
+    await PrincessApi.request(`/api/bookings/${pendingDeclineBookingId}/status`,{method:'PUT',body:JSON.stringify(payload)});
+    document.querySelector('#booking-decline-dialog').close();
+    pendingDeclineBookingId=null;
+    await loadBookings();
+    feedback(option==='Custom'?'Booking declined and Julia’s email was sent.':'Booking declined and the automatic scheduling-conflict email was sent.','success');
+  }catch(error){feedback(error.message,'error');}
+  finally{button.disabled=false;}
 }
 async function loadBookings(){
   ownerBookings=await PrincessApi.request('/api/bookings/admin');
@@ -85,6 +142,20 @@ function populateOwnerDogs(){const customer=ownerCustomers.find(item=>item.id===
 function selectedOwnerService(){return ownerServices.find(service=>String(service.id)===ownerBookService.value);}
 function toggleOwnerOvernight(){const overnight=Boolean(selectedOwnerService()?.isOvernightStay);document.querySelector('#owner-book-end-field').hidden=!overnight;ownerBookEndDate.required=overnight;ownerBookTime.required=!overnight;ownerBookTime.disabled=overnight;if(overnight){ownerBookTime.innerHTML='<option value="">Overnight stay</option>';if(!ownerBookEndDate.value){const next=new Date(`${ownerBookDate.value}T00:00:00`);next.setDate(next.getDate()+1);ownerBookEndDate.value=formatIso(next);}}}
 async function loadOwnerBookingTimes(){if(selectedOwnerService()?.isOvernightStay)return toggleOwnerOvernight();ownerBookTime.disabled=true;ownerBookTime.innerHTML='<option value="">Choose a service and date</option>';if(!ownerBookService.value||!ownerBookDate.value)return;ownerBookTime.innerHTML='<option value="">Checking open times…</option>';try{const slots=await PrincessApi.request(`/api/availability/slots?from=${ownerBookDate.value}&to=${ownerBookDate.value}&serviceId=${ownerBookService.value}`);ownerBookTime.innerHTML='<option value="">Choose an open time</option>';slots.forEach(slot=>ownerBookTime.add(new Option(formatTime(slot.startTime),slot.startTime)));ownerBookTime.disabled=!slots.length;if(!slots.length)ownerBookTime.innerHTML='<option value="">No open times on this date</option>';}catch(error){ownerBookTime.innerHTML='<option value="">Could not load times</option>';feedback(error.message,'error');}}
+async function applyOwnerBookingSelection(){
+  const params=new URLSearchParams(location.search);
+  const serviceId=params.get('serviceId');const date=params.get('date');const time=params.get('time');const endDate=params.get('endDate');
+  if(!serviceId&&!date&&!time&&!endDate)return;
+  showOwnerPanel('schedule',false);
+  if(serviceId&&ownerServices.some(service=>String(service.id)===serviceId))ownerBookService.value=serviceId;
+  if(date&&date>=ownerBookDate.min)ownerBookDate.value=date;
+  ownerBookEndDate.min=ownerBookDate.value;
+  if(endDate&&endDate>ownerBookDate.value)ownerBookEndDate.value=endDate;
+  toggleOwnerOvernight();
+  await loadOwnerBookingTimes();
+  if(time&&[...ownerBookTime.options].some(option=>option.value===time))ownerBookTime.value=time;
+  document.querySelector('#owner-booking-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
 document.querySelector('#owner-booking-form').addEventListener('submit',async event=>{event.preventDefault();if(!event.currentTarget.reportValidity())return;const overnight=Boolean(selectedOwnerService()?.isOvernightStay);const data={customerId:ownerBookCustomer.value,dogId:Number(ownerBookDog.value),serviceId:Number(ownerBookService.value),date:ownerBookDate.value,startTime:overnight?'22:00':ownerBookTime.value,specialInstructions:document.querySelector('#owner-book-notes').value,endDate:overnight?ownerBookEndDate.value:null};try{await PrincessApi.request('/api/bookings/admin',{method:'POST',body:JSON.stringify(data)});document.querySelector('#owner-book-notes').value='';await loadBookings();await loadOwnerBookingTimes();feedback('Confirmed booking added for the customer.','success');}catch(error){feedback(error.message,'error');await loadOwnerBookingTimes();}});
 document.querySelectorAll('[data-owner-calendar-view]').forEach(button=>button.addEventListener('click',()=>setOwnerCalendarView(button.dataset.ownerCalendarView)));
 document.querySelector('#owner-calendar-prev').addEventListener('click',()=>navigateOwnerCalendar(-1));
@@ -205,7 +276,7 @@ async function loadCustomers(){
     list.append(card);
   });
 }
-async function updateApproval(id,status){if(status==='Declined'&&!confirm('Decline this account and email the customer?'))return;try{await PrincessApi.request(`/api/users/customers/${id}/approval`,{method:'PUT',body:JSON.stringify({status})});await loadCustomers();feedback(status==='Declined'?'Customer declined and notification email sent.':`Customer account ${status.toLowerCase()}.`,'success');}catch(error){feedback(error.message,'error');}}
+async function updateApproval(id,status){if(status==='Declined'&&!confirm('Decline this account and email the customer?'))return;try{await PrincessApi.request(`/api/users/customers/${id}/approval`,{method:'PUT',body:JSON.stringify({status})});await loadCustomers();await loadBookings();feedback(status==='Approved'?'Customer service area approved. The booking request can now be confirmed.':'Customer declined and the service-area email was sent.','success');}catch(error){feedback(error.message,'error');}}
 
 const ownerCustomerForm=document.querySelector('#owner-customer-form');
 const ownerDogFields=ownerCustomerForm.querySelector('.form-grid');
@@ -232,4 +303,4 @@ document.querySelector('#owner-customer-form').addEventListener('submit',async e
 });
 
 if(ownerUser)loadOwner();
-function action(text,handler,extra=''){const button=document.createElement('button');button.className=`link-button ${extra}`;button.type='button';button.textContent=text;button.addEventListener('click',handler);return button;}function empty(text){const node=document.createElement('div');node.className='empty-state';node.textContent=text;return node;}function feedback(text,type){ownerStatus.textContent=text;ownerStatus.className=`form-status ${type}`;ownerStatus.scrollIntoView({behavior:'smooth'});}function formatDate(value){return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`));}function formatTime(value){const[h,m]=value.split(':');return new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(2000,0,1,h,m));}function formatIso(value){return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`;}function daysBetween(start,end){return Math.max(1,Math.round((new Date(`${end}T00:00:00Z`)-new Date(`${start}T00:00:00Z`))/86400000));}
+function mini(titleText,bodyText){const card=document.createElement('article');card.className='mini-card';const title=document.createElement('h3');title.textContent=titleText;const body=document.createElement('p');body.textContent=bodyText;body.style.whiteSpace='pre-line';card.append(title,body);return card;}function action(text,handler,extra=''){const button=document.createElement('button');button.className=`link-button ${extra}`;button.type='button';button.textContent=text;button.addEventListener('click',handler);return button;}function empty(text){const node=document.createElement('div');node.className='empty-state';node.textContent=text;return node;}function feedback(text,type){ownerStatus.textContent=text;ownerStatus.className=`form-status ${type}`;ownerStatus.scrollIntoView({behavior:'smooth'});}function formatDate(value){return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(`${value}T00:00:00Z`));}function formatTime(value){const[h,m]=value.split(':');return new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(2000,0,1,h,m));}function formatIso(value){return `${value.getFullYear()}-${String(value.getMonth()+1).padStart(2,'0')}-${String(value.getDate()).padStart(2,'0')}`;}function daysBetween(start,end){return Math.max(1,Math.round((new Date(`${end}T00:00:00Z`)-new Date(`${start}T00:00:00Z`))/86400000));}

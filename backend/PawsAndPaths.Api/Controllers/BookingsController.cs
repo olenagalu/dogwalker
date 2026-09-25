@@ -97,6 +97,11 @@ public class BookingsController(
     {
         var allowed = new[] { BookingStatus.Confirmed, BookingStatus.Declined, BookingStatus.Cancelled, BookingStatus.Completed };
         if (!allowed.Contains(request.Status)) return BadRequest(new { message = "Invalid owner status change." });
+        if (request.Status == BookingStatus.Declined
+            && request.DeclineEmailOption == DeclineEmailOption.Custom
+            && (string.IsNullOrWhiteSpace(request.CustomEmailSubject)
+                || string.IsNullOrWhiteSpace(request.CustomEmailMessage)))
+            return BadRequest(new { message = "Add both a subject and message for the custom decline email." });
         var previousStatus = await db.Bookings.AsNoTracking()
             .Where(item => item.Id == id)
             .Select(item => (BookingStatus?)item.Status)
@@ -114,7 +119,14 @@ public class BookingsController(
                         booking.User.FullName,
                         booking.Dog.Name,
                         booking.ServiceOffering.Name,
-                        booking.Date), cancellationToken);
+                        booking.Date),
+                    request.DeclineEmailOption == DeclineEmailOption.Custom
+                        ? request.CustomEmailSubject?.Trim()
+                        : null,
+                    request.DeclineEmailOption == DeclineEmailOption.Custom
+                        ? request.CustomEmailMessage?.Trim()
+                        : null,
+                    cancellationToken);
             }
             catch (Exception exception)
             {

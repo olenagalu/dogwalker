@@ -25,6 +25,8 @@ public class WelcomeEmailContentTests
         Assert.Equal("customer@example.com", message.To.Mailboxes.Single().Address);
         Assert.Contains("Sam Taylor", message.HtmlBody);
         Assert.Contains("561-788-3531", message.TextBody);
+        Assert.Contains("request an available service", message.TextBody);
+        Assert.DoesNotContain("review your service area", message.TextBody);
     }
 
     [Fact]

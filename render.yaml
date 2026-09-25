@@ -27,11 +27,11 @@ services:
       - key: Email__SmtpPort
         value: "587"
       - key: Email__SmtpUsername
-        sync: false
+        value: princessdogwalkerboca@gmail.com
       - key: Email__SmtpPassword
         sync: false
       - key: Email__FromAddress
-        sync: false
+        value: princessdogwalkerboca@gmail.com
       - key: Email__FromName
         value: Princess Dog Walker
       - key: DB_HOST

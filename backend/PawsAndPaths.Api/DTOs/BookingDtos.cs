@@ -34,14 +34,25 @@ public record UpdateOvernightScheduleDto(
     TimeOnly MiddayStartTime,
     TimeOnly MiddayEndTime);
 
-public record UpdateBookingStatusDto(BookingStatus Status);
+public record UpdateBookingStatusDto(
+    BookingStatus Status,
+    DeclineEmailOption DeclineEmailOption = DeclineEmailOption.Automatic,
+    [MaxLength(160)] string? CustomEmailSubject = null,
+    [MaxLength(5000)] string? CustomEmailMessage = null);
+
+public enum DeclineEmailOption
+{
+    Automatic,
+    Custom
+}
 
 public record BookingDto(
     int Id, string CustomerName, string CustomerEmail, string CustomerPhone, int DogId, string DogName,
     int ServiceId, string ServiceName, DateOnly Date, TimeOnly StartTime, TimeOnly EndTime,
     decimal Price, string SpecialInstructions, BookingStatus Status, DateTimeOffset CreatedAt,
     DateOnly? EndDate, bool IsOvernightStay, TimeOnly? OvernightStartTime,
-    TimeOnly? OvernightEndTime, TimeOnly? MiddayStartTime, TimeOnly? MiddayEndTime);
+    TimeOnly? OvernightEndTime, TimeOnly? MiddayStartTime, TimeOnly? MiddayEndTime,
+    string CustomerId, AccountApprovalStatus CustomerApprovalStatus);
 
 public static class BookingPricing
 {

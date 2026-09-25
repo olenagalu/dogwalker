@@ -52,7 +52,7 @@ public static class WelcomeEmailContent
         message.Subject = "Welcome to Princess Dog Walker!";
         message.Body = new BodyBuilder
         {
-            TextBody = $"Hi {recipientName},\n\nWelcome to Princess Dog Walker! You can add your dogs now. Julia will review your service area before booking is enabled.\n\nWith love and happy tails,\nJulia\nPrincess Dog Walker\n561-788-3531",
+            TextBody = $"Hi {recipientName},\n\nWelcome to Princess Dog Walker! You can add your dogs and request an available service whenever you’re ready.\n\nWith love and happy tails,\nJulia\nPrincess Dog Walker\n561-788-3531",
             HtmlBody = $$"""
                 <!doctype html>
                 <html lang="en">
@@ -61,7 +61,7 @@ public static class WelcomeEmailContent
                     <div style="background:#ffffff;border:1px solid #f3cfdf;border-radius:20px;padding:32px">
                       <p style="margin:0 0 8px;color:#b23a72;font-weight:700">PRINCESS DOG WALKER ✨</p>
                       <h1 style="margin:0 0 20px;font-size:28px;color:#7c2852">Welcome, {{safeName}}!</h1>
-                      <p style="font-size:16px;line-height:1.6">Your account has been created. You can add your dogs now, and Julia will review your service area before booking is enabled.</p>
+                      <p style="font-size:16px;line-height:1.6">Your account has been created. You can add your dogs and request an available service whenever you’re ready.</p>
                       <p style="font-size:16px;line-height:1.6">We’re so happy to have you and your pup here. 🐾</p>
                       <p style="margin:28px 0 0;line-height:1.6">With love and happy tails,<br><strong>Julia</strong><br>Princess Dog Walker<br><a href="tel:+15617883531" style="color:#b23a72">561-788-3531</a></p>
                     </div>

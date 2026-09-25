@@ -15,6 +15,7 @@ const overnightCheckout = document.querySelector('#overnight-checkout');
 const overnightRangeResult = document.querySelector('#overnight-range-result');
 const today = new Date();
 const localToday = formatIso(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+const availabilityUser = PrincessApi.user();
 let services = [];
 let calendarDate = parseDate(localToday);
 let selectedDate = null;
@@ -126,7 +127,7 @@ function renderOvernightResult(service) {
   link.className = 'button button-clay';
   if (available) {
     link.href = bookingUrl(service.id, overnightAvailability.checkIn, '', overnightAvailability.checkout);
-    link.textContent = 'Continue to booking';
+    link.textContent = availabilityUser?.role === 'Owner' ? 'Add a booking' : 'Continue to booking';
   } else {
     const params = new URLSearchParams({ serviceId: String(service.id), checkIn: overnightAvailability.checkIn, checkout: overnightAvailability.checkout });
     link.href = `request.html?${params}`;
@@ -369,11 +370,12 @@ function scheduleSlot(segment, date, service) {
   const time = document.createElement('strong');
   time.textContent = formatTime(segment.startTime);
   const status = document.createElement('span');
-  status.textContent = bookable ? 'Request this time' : segment.status === 'Available' ? `Doesn’t fit ${service.durationMinutes} min` : segment.status;
+  status.textContent = bookable ? (availabilityUser?.role === 'Owner' ? 'Add a booking' : 'Request this time') : segment.status === 'Available' ? `Doesn’t fit ${service.durationMinutes} min` : segment.status;
   node.append(time, status);
   if (bookable) {
     node.href = bookingUrl(service.id, date, segment.startTime);
-    node.setAttribute('aria-label', `Request ${service.name} on ${formatLongDate(date)} at ${formatTime(segment.startTime)}`);
+    const action = availabilityUser?.role === 'Owner' ? 'Add a booking for' : 'Request';
+    node.setAttribute('aria-label', `${action} ${service.name} on ${formatLongDate(date)} at ${formatTime(segment.startTime)}`);
   }
   return node;
 }
@@ -382,6 +384,7 @@ function bookingUrl(serviceId, date, time = '', endDate = '') {
   const params = new URLSearchParams({ serviceId: String(serviceId), date });
   if (time) params.set('time', time);
   if (endDate) params.set('endDate', endDate);
+  if (availabilityUser?.role === 'Owner') return `owner.html?${params}#schedule`;
   return `book.html?${params}`;
 }
 

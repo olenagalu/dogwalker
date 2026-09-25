@@ -23,5 +23,6 @@ public static class MappingExtensions
         booking.EndTime, booking.Price, booking.SpecialInstructions,
         booking.Status, booking.CreatedAt, booking.EndDate, booking.IsOvernightStay,
         booking.OvernightStartTime, booking.OvernightEndTime,
-        booking.MiddayStartTime, booking.MiddayEndTime);
+        booking.MiddayStartTime, booking.MiddayEndTime,
+        booking.UserId, booking.User.ApprovalStatus);
 }

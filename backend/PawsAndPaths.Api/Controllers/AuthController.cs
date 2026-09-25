@@ -21,6 +21,7 @@ public class AuthController(
     ITokenService tokenService,
     IWelcomeEmailSender welcomeEmailSender,
     IPasswordResetEmailSender passwordResetEmailSender,
+    IOwnerNotificationEmailSender ownerNotificationEmailSender,
     AppDbContext dbContext,
     IConfiguration configuration,
     ILogger<AuthController> logger) : ControllerBase
@@ -45,6 +46,7 @@ public class AuthController(
 
         await userManager.AddToRoleAsync(user, AppRoles.Customer);
         await TrySendWelcomeEmailAsync(user);
+        await TrySendAccountApprovalRequestAsync(user);
         return Ok(await ResponseFor(user));
     }
 
@@ -105,6 +107,7 @@ public class AuthController(
             if (!result.Succeeded) return BadRequest(result.Errors);
             await userManager.AddToRoleAsync(user, AppRoles.Customer);
             await TrySendWelcomeEmailAsync(user);
+            await TrySendAccountApprovalRequestAsync(user);
         }
 
         return Ok(await ResponseFor(user));
@@ -200,6 +203,25 @@ public class AuthController(
         catch (Exception exception)
         {
             logger.LogError(exception, "Welcome email could not be sent for user {UserId}.", user.Id);
+        }
+    }
+
+    private async Task TrySendAccountApprovalRequestAsync(AppUser user)
+    {
+        try
+        {
+            await ownerNotificationEmailSender.SendAccountApprovalRequestAsync(
+                new AccountApprovalNotification(
+                    user.FullName,
+                    user.Email ?? string.Empty,
+                    user.PhoneNumber ?? string.Empty,
+                    user.ServiceArea,
+                    user.ServiceAddress));
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception,
+                "Owner account-approval notification could not be sent for user {UserId}.", user.Id);
         }
     }
 }

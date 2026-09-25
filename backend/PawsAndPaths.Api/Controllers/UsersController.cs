@@ -17,6 +17,7 @@ public class UsersController(
     UserManager<AppUser> userManager,
     ICustomerManagementService customerManagementService,
     IAccountDecisionEmailSender accountDecisionEmailSender,
+    IOwnerNotificationEmailSender ownerNotificationEmailSender,
     ILogger<UsersController> logger) : ControllerBase
 {
     [HttpGet("me")]
@@ -42,10 +43,25 @@ public class UsersController(
         user.PhoneNumber = request.Phone.Trim();
         user.ServiceArea = request.ServiceArea.Trim();
         user.ServiceAddress = request.ServiceAddress.Trim();
-        if (areaChanged && !await userManager.IsInRoleAsync(user, AppRoles.Owner))
+        var needsApprovalNotification = areaChanged && !await userManager.IsInRoleAsync(user, AppRoles.Owner);
+        if (needsApprovalNotification)
             user.ApprovalStatus = AccountApprovalStatus.Pending;
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded) return BadRequest(result.Errors);
+        if (needsApprovalNotification && !string.IsNullOrWhiteSpace(user.Email))
+        {
+            try
+            {
+                await ownerNotificationEmailSender.SendAccountApprovalRequestAsync(
+                    new AccountApprovalNotification(user.FullName, user.Email,
+                        user.PhoneNumber ?? string.Empty, user.ServiceArea, user.ServiceAddress));
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception,
+                    "Owner account-approval notification could not be sent for user {UserId}.", user.Id);
+            }
+        }
         var roles = await userManager.GetRolesAsync(user);
         var role = roles.Contains(AppRoles.Owner) ? AppRoles.Owner : AppRoles.Customer;
         return Ok(new UserProfileDto(user.Id, user.FullName, user.Email ?? string.Empty,
@@ -91,12 +107,12 @@ public class UsersController(
         if (request.Status == AccountApprovalStatus.Approved
             && (string.IsNullOrWhiteSpace(customer.ServiceArea) || string.IsNullOrWhiteSpace(customer.ServiceAddress)))
             return Conflict(new { message = "The customer must provide a service area and address before approval." });
-        var sendDeclinedEmail = request.Status == AccountApprovalStatus.Declined
-            && customer.ApprovalStatus != AccountApprovalStatus.Declined;
+        var sendDecisionEmail = request.Status != customer.ApprovalStatus;
         customer.ApprovalStatus = request.Status;
         var update = await userManager.UpdateAsync(customer);
         if (!update.Succeeded) return BadRequest(update.Errors);
-        if (sendDeclinedEmail && !string.IsNullOrWhiteSpace(customer.Email))
+        if (sendDecisionEmail && request.Status == AccountApprovalStatus.Declined
+            && !string.IsNullOrWhiteSpace(customer.Email))
         {
             try
             {
@@ -106,7 +122,7 @@ public class UsersController(
             catch (Exception exception)
             {
                 logger.LogError(exception,
-                    "Declined-account email could not be sent for user {UserId}.", customer.Id);
+                    "Account-decision email could not be sent for user {UserId}.", customer.Id);
             }
         }
         return NoContent();

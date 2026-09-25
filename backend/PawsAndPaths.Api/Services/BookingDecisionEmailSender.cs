@@ -16,6 +16,8 @@ public record BookingDeclinedNotification(
 public interface IBookingDecisionEmailSender
 {
     Task SendDeclinedAsync(BookingDeclinedNotification notification,
+        string? customSubject = null,
+        string? customMessage = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -24,7 +26,10 @@ public sealed class BookingDecisionEmailSender(
     ILogger<BookingDecisionEmailSender> logger) : IBookingDecisionEmailSender
 {
     public async Task SendDeclinedAsync(
-        BookingDeclinedNotification notification, CancellationToken cancellationToken = default)
+        BookingDeclinedNotification notification,
+        string? customSubject = null,
+        string? customMessage = null,
+        CancellationToken cancellationToken = default)
     {
         var host = configuration["Email:SmtpHost"];
         var username = configuration["Email:SmtpUsername"];
@@ -37,12 +42,14 @@ public sealed class BookingDecisionEmailSender(
             return;
         }
 
-        var message = BookingDecisionEmailContent.CreateDeclined(
-            notification,
-            fromAddress,
-            configuration["Email:FromName"] ?? "Princess Dog Walker",
-            configuration["Owner:Email"] ?? "kadulinaiulia@gmail.com",
-            configuration["Owner:Phone"] ?? "561-788-3531");
+        var fromName = configuration["Email:FromName"] ?? "Princess Dog Walker";
+        var message = string.IsNullOrWhiteSpace(customSubject) || string.IsNullOrWhiteSpace(customMessage)
+            ? BookingDecisionEmailContent.CreateDeclined(
+                notification, fromAddress, fromName,
+                configuration["Owner:Email"] ?? "kadulinaiulia@gmail.com",
+                configuration["Owner:Phone"] ?? "561-788-3531")
+            : BookingDecisionEmailContent.CreateCustomDeclined(
+                notification, fromAddress, fromName, customSubject, customMessage);
         using var client = new SmtpClient { Timeout = 10_000 };
         await client.ConnectAsync(host, configuration.GetValue("Email:SmtpPort", 587),
             SecureSocketOptions.StartTls, cancellationToken);
@@ -54,6 +61,35 @@ public sealed class BookingDecisionEmailSender(
 
 public static class BookingDecisionEmailContent
 {
+    public static MimeMessage CreateCustomDeclined(
+        BookingDeclinedNotification notification,
+        string fromAddress,
+        string fromName,
+        string subject,
+        string customMessage)
+    {
+        var safeMessage = WebUtility.HtmlEncode(customMessage)
+            .Replace("\r\n", "<br>", StringComparison.Ordinal)
+            .Replace("\n", "<br>", StringComparison.Ordinal);
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(fromName, fromAddress));
+        message.To.Add(MailboxAddress.Parse(notification.CustomerEmail));
+        message.Subject = subject;
+        message.Body = new BodyBuilder
+        {
+            TextBody = customMessage,
+            HtmlBody = $$"""
+                <!doctype html>
+                <html lang="en"><body style="margin:0;background:#fff7fb;font-family:Arial,sans-serif;color:#43283a">
+                  <div style="max-width:600px;margin:0 auto;padding:32px 24px"><div style="background:#fff;border:1px solid #f3cfdf;border-radius:20px;padding:32px;font-size:16px;line-height:1.6">
+                    {{safeMessage}}
+                  </div></div>
+                </body></html>
+                """
+        }.ToMessageBody();
+        return message;
+    }
+
     public static MimeMessage CreateDeclined(
         BookingDeclinedNotification notification,
         string fromAddress,
@@ -73,7 +109,7 @@ public static class BookingDecisionEmailContent
         message.Subject = "About your Princess Dog Walker booking request";
         message.Body = new BodyBuilder
         {
-            TextBody = $"Hi {notification.CustomerName},\n\nThank you for requesting {notification.ServiceName} for {notification.DogName} on {date}. We’re sorry, but Princess Dog Walker does not currently provide service in your area, so we’re unable to approve this booking request.\n\nPlease do not reply to this automated email. If you have any questions, contact Julia directly at {contactEmail} or {contactPhone}.\n\nThank you for understanding,\nJulia\nPrincess Dog Walker",
+            TextBody = $"Hi {notification.CustomerName},\n\nThank you for requesting {notification.ServiceName} for {notification.DogName} on {date}. We are genuinely sorry, but a scheduling conflict means we’re unable to approve this booking request.\n\nPlease do not reply to this automated email. If you have any questions, contact Julia directly at {contactEmail} or {contactPhone}.\n\nThank you for understanding,\nJulia\nPrincess Dog Walker",
             HtmlBody = $$"""
                 <!doctype html>
                 <html lang="en"><body style="margin:0;background:#fff7fb;font-family:Arial,sans-serif;color:#43283a">
@@ -81,7 +117,7 @@ public static class BookingDecisionEmailContent
                     <p style="margin:0 0 8px;color:#b23a72;font-weight:700">PRINCESS DOG WALKER</p>
                     <h1 style="margin:0 0 20px;font-size:26px;color:#7c2852">Hi {{safeName}},</h1>
                     <p style="font-size:16px;line-height:1.6">Thank you for requesting <strong>{{safeService}}</strong> for {{safeDog}} on {{date}}.</p>
-                    <p style="font-size:16px;line-height:1.6">We’re sorry, but Princess Dog Walker does not currently provide service in your area, so we’re unable to approve this booking request.</p>
+                    <p style="font-size:16px;line-height:1.6">We are genuinely sorry, but a scheduling conflict means we’re unable to approve this booking request.</p>
                     <p style="font-size:16px;line-height:1.6"><strong>Please do not reply to this automated email.</strong> If you have any questions, contact Julia directly at <a href="mailto:{{safeContactEmail}}" style="color:#b23a72">{{safeContactEmail}}</a> or <a href="tel:+1{{safeContactPhone.Replace("-", string.Empty)}}" style="color:#b23a72">{{safeContactPhone}}</a>.</p>
                     <p style="margin:28px 0 0;line-height:1.6">Thank you for understanding,<br><strong>Julia</strong><br>Princess Dog Walker</p>
                   </div></div>

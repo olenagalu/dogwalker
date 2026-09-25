@@ -8,6 +8,13 @@ namespace PawsAndPaths.Api.Services;
 
 public record ContactNotification(string Name, string Email, string Message);
 
+public record AccountApprovalNotification(
+    string CustomerName,
+    string CustomerEmail,
+    string CustomerPhone,
+    string ServiceArea,
+    string ServiceAddress);
+
 public record BookingNotification(
     string CustomerName,
     string CustomerEmail,
@@ -23,6 +30,8 @@ public record BookingNotification(
 
 public interface IOwnerNotificationEmailSender
 {
+    Task SendAccountApprovalRequestAsync(AccountApprovalNotification notification,
+        CancellationToken cancellationToken = default);
     Task SendContactMessageAsync(ContactNotification notification, CancellationToken cancellationToken = default);
     Task SendBookingRequestAsync(BookingNotification notification, CancellationToken cancellationToken = default);
 }
@@ -31,6 +40,15 @@ public sealed class OwnerNotificationEmailSender(
     IConfiguration configuration,
     ILogger<OwnerNotificationEmailSender> logger) : IOwnerNotificationEmailSender
 {
+    public Task SendAccountApprovalRequestAsync(
+        AccountApprovalNotification notification, CancellationToken cancellationToken = default) =>
+        SendAsync(OwnerNotificationEmailContent.CreateAccountApprovalRequest(
+            notification,
+            OwnerEmail,
+            FromAddress,
+            configuration["Email:FromName"] ?? "Princess Dog Walker",
+            $"{(configuration["PublicBaseUrl"] ?? "https://princess-dog-walker.onrender.com").TrimEnd('/')}/owner.html#owner-customers"), cancellationToken);
+
     public Task SendContactMessageAsync(
         ContactNotification notification, CancellationToken cancellationToken = default) =>
         SendAsync(OwnerNotificationEmailContent.CreateContactMessage(
@@ -77,6 +95,42 @@ public sealed class OwnerNotificationEmailSender(
 
 public static class OwnerNotificationEmailContent
 {
+    public static MimeMessage CreateAccountApprovalRequest(
+        AccountApprovalNotification notification, string ownerEmail, string fromAddress, string fromName,
+        string? ownerDashboardUrl = null)
+    {
+        var safe = new
+        {
+            Name = WebUtility.HtmlEncode(notification.CustomerName),
+            Email = WebUtility.HtmlEncode(notification.CustomerEmail),
+            Phone = WebUtility.HtmlEncode(notification.CustomerPhone),
+            Area = WebUtility.HtmlEncode(notification.ServiceArea),
+            Address = WebUtility.HtmlEncode(notification.ServiceAddress)
+        };
+        var message = CreateBase(ownerEmail, fromAddress, fromName, notification.CustomerEmail,
+            $"Account approval needed: {notification.CustomerName}");
+        var dashboardText = string.IsNullOrWhiteSpace(ownerDashboardUrl)
+            ? string.Empty
+            : $"\n\nReview this account: {ownerDashboardUrl}";
+        var dashboardHtml = string.IsNullOrWhiteSpace(ownerDashboardUrl)
+            ? string.Empty
+            : $"<p><a href=\"{WebUtility.HtmlEncode(ownerDashboardUrl)}\">Open the owner dashboard to review this account</a></p>";
+        message.Body = new BodyBuilder
+        {
+            TextBody = $"A customer account is waiting for approval.\n\nName: {notification.CustomerName}\nEmail: {notification.CustomerEmail}\nPhone: {notification.CustomerPhone}\nService area: {notification.ServiceArea}\nService address: {notification.ServiceAddress}{dashboardText}",
+            HtmlBody = $$"""
+                <h1>Account approval needed</h1>
+                <p><strong>Name:</strong> {{safe.Name}}<br>
+                <strong>Email:</strong> {{safe.Email}}<br>
+                <strong>Phone:</strong> {{safe.Phone}}<br>
+                <strong>Service area:</strong> {{safe.Area}}<br>
+                <strong>Service address:</strong> {{safe.Address}}</p>
+                {{dashboardHtml}}
+                """
+        }.ToMessageBody();
+        return message;
+    }
+
     public static MimeMessage CreateContactMessage(
         ContactNotification notification, string ownerEmail, string fromAddress, string fromName)
     {

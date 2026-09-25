@@ -193,9 +193,9 @@ New email/password and Google-created customer accounts receive one welcome emai
 ```text
 Email__SmtpHost=smtp.gmail.com
 Email__SmtpPort=587
-Email__SmtpUsername=kadulinaiulia@gmail.com
+Email__SmtpUsername=princessdogwalkerboca@gmail.com
 Email__SmtpPassword=<Google app password>
-Email__FromAddress=kadulinaiulia@gmail.com
+Email__FromAddress=princessdogwalkerboca@gmail.com
 Email__FromName=Princess Dog Walker
 ```
 
