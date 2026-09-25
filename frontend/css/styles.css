@@ -156,7 +156,7 @@ textarea { min-height: 105px; resize: vertical; }
 .appointment-date { font-family: 'Fraunces', serif; font-size: 1.35rem; }
 .appointment-meta { color: var(--muted); }
 .appointment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.owner-booking-tools { display: grid; grid-template-columns: minmax(280px,.75fr) minmax(0,1.6fr); gap: 1.5rem; align-items: start; margin-bottom: 2.25rem; }
+.owner-booking-tools { display: grid; grid-template-columns: minmax(0,1fr); gap: 2rem; align-items: start; margin-bottom: 2.25rem; }
 .owner-calendar-panel { min-width: 0; padding: 1.4rem; overflow-x: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
 .owner-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .owner-calendar-toolbar h3 { margin: 0; text-align: center; }
@@ -182,7 +182,7 @@ textarea { min-height: 105px; resize: vertical; }
 .owner-calendar-zoom:hover, .owner-calendar-zoom:focus-visible { background: #fff6fa; outline: 2px solid var(--forest); outline-offset: -2px; }
 .owner-calendar-block { display: block; width: 100%; margin-bottom: .3rem; padding: .35rem .4rem; color: #6a4b22; background: #fff0d9; border-left: 4px solid #c27623; border-radius: 6px; font-size: .62rem; font-weight: 700; line-height: 1.25; }
 .blocked-dot { background: #c27623; }
-.owner-availability-tools { display: grid; grid-template-columns: minmax(0,1fr) minmax(300px,.8fr); gap: 1.5rem; align-items: start; margin: 2.25rem 0; padding-top: 2.25rem; border-top: 1px solid var(--line); }
+.owner-availability-tools { display: grid; grid-template-columns: minmax(0,1fr); gap: 2rem; align-items: start; margin: 2.25rem 0; padding-top: 2.25rem; border-top: 1px solid var(--line); }
 .owner-week-calendar { display: grid; grid-template-columns: repeat(7,minmax(150px,1fr)); gap: .65rem; min-width: 1070px; }
 .owner-week-day { display: flex; min-height: 330px; padding: .75rem; flex-direction: column; gap: .55rem; background: #fffafd; border: 1px solid var(--line); border-radius: 14px; }
 .owner-week-day-heading { display: flex; padding-bottom: .65rem; flex-direction: column; align-items: center; border-bottom: 1px solid var(--line); }
@@ -556,6 +556,13 @@ textarea { min-height: 105px; resize: vertical; }
 .owner-history-summary strong { color:var(--forest); }
 .owner-profile-page .owner-availability-tools { margin:0; padding-top:0; border-top:0; }
 .owner-profile-page .owner-booking-tools { margin-bottom:2rem; }
+.owner-profile-page .owner-booking-tools > *,
+.owner-profile-page .owner-availability-tools > *,
+.owner-profile-page .owner-customer-tools > * { width:100%; min-width:0; }
+.owner-profile-page .owner-customer-tools { grid-template-columns:minmax(0,1fr); gap:2rem; }
+.owner-profile-page .owner-booking-tools .profile-inner-form,
+.owner-profile-page .owner-availability-tools .profile-inner-form,
+.owner-profile-page .owner-customer-tools .profile-inner-form { margin-top:0; }
 
 @media (max-width:850px){
   .customer-profile-summary { grid-template-columns:auto 1fr; }
