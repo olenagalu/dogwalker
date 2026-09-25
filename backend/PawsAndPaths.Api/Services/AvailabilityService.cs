@@ -17,15 +17,14 @@ public interface IAvailabilityService
 
 public class AvailabilityService(AppDbContext db) : IAvailabilityService
 {
-    private static readonly TimeOnly RegularDayStart = new(6, 0);
-    private static readonly TimeOnly RegularDayEnd = new(23, 0);
 
     public async Task<bool> IsAvailableAsync(
         DateOnly date, TimeOnly start, TimeOnly end, int? excludeBookingId,
         CancellationToken cancellationToken, bool enforceRegularHours = true)
     {
         if (end <= start || date < DateOnly.FromDateTime(DateTime.Today)) return false;
-        if (enforceRegularHours && (start < RegularDayStart || end > RegularDayEnd)) return false;
+        var hours = await WorkingHours.ReadAsync(db, cancellationToken);
+        if (enforceRegularHours && (start < hours.Start || end > hours.End)) return false;
 
         // Within regular hours, owner-created rules remove additional time.
         var blocked = await RulesForDate(date).Where(rule => !rule.IsAvailable).ToListAsync(cancellationToken);
@@ -51,6 +50,7 @@ public class AvailabilityService(AppDbContext db) : IAvailabilityService
         if (service.IsOvernightStay) return [];
 
         var today = DateOnly.FromDateTime(DateTime.Today);
+        var hours = await WorkingHours.ReadAsync(db, cancellationToken);
         var blockedRules = await db.Availability.AsNoTracking()
             .Where(rule => !rule.IsAvailable).ToListAsync(cancellationToken);
         var activeBookings = await db.Bookings.AsNoTracking()
@@ -72,8 +72,8 @@ public class AvailabilityService(AppDbContext db) : IAvailabilityService
             var windows = bookingWindows.GetValueOrDefault(date, []);
             // Regular appointments begin no earlier than 6 AM and must finish
             // by 11 PM. Overnight stays use their separate care schedule.
-            for (var startMinutes = 6 * 60;
-                 startMinutes + service.DurationMinutes <= 23 * 60;
+            for (var startMinutes = hours.Start.Hour * 60 + hours.Start.Minute;
+                 startMinutes + service.DurationMinutes <= hours.End.Hour * 60 + hours.End.Minute;
                  startMinutes += 30)
             {
                 var start = new TimeOnly(startMinutes / 60, startMinutes % 60);
@@ -105,6 +105,7 @@ public class AvailabilityService(AppDbContext db) : IAvailabilityService
             .Where(window => window.Date == date).ToList();
         var today = DateOnly.FromDateTime(DateTime.Today);
         var segments = new List<PublicScheduleSegmentDto>();
+        var hours = await WorkingHours.ReadAsync(db, cancellationToken);
 
         for (var startMinutes = 0; startMinutes < 24 * 60; startMinutes += 30)
         {
@@ -117,11 +118,11 @@ public class AvailabilityService(AppDbContext db) : IAvailabilityService
             var unavailable = blocked.Any(rule =>
                 Overlaps(start, segmentEnd, rule.StartTime, rule.EndTime));
             var withinRegularHours = service.IsOvernightStay
-                || (start >= RegularDayStart && segmentEnd <= RegularDayEnd);
+                || (start >= hours.Start && segmentEnd <= hours.End);
             var status = booked ? "Booked" : unavailable || !withinRegularHours ? "Unavailable" : "Available";
 
             var appointmentEndMinutes = startMinutes + service.DurationMinutes;
-            var appointmentFitsHours = start >= RegularDayStart && appointmentEndMinutes <= 23 * 60;
+            var appointmentFitsHours = start >= hours.Start && appointmentEndMinutes <= hours.End.Hour * 60 + hours.End.Minute;
             var bookable = !service.IsOvernightStay && date >= today
                 && status == "Available" && appointmentFitsHours;
             if (bookable)

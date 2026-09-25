@@ -12,6 +12,36 @@ namespace PawsAndPaths.Api.Controllers;
 [Route("api/availability")]
 public class AvailabilityController(AppDbContext db, IAvailabilityService availabilityService) : ControllerBase
 {
+    [HttpGet("hours")]
+    public async Task<IActionResult> Hours(CancellationToken ct) => Ok(await WorkingHours.ReadAsync(db, ct));
+
+    [HttpPut("hours"), Authorize(Roles = AppRoles.Owner)]
+    public async Task<IActionResult> SaveHours(WorkingHours hours, CancellationToken ct)
+    {
+        if (hours.End <= hours.Start || hours.EmergencyStart == hours.EmergencyEnd)
+            return BadRequest(new { message = "Regular closing time must follow opening time; emergency start and end must differ." });
+        var row = await db.SiteContent.FindAsync([WorkingHours.Key], ct);
+        if (row is null) { row = new SiteContent { Key = WorkingHours.Key }; db.SiteContent.Add(row); }
+        row.Text = System.Text.Json.JsonSerializer.Serialize(hours);
+        row.ContentType = "application/json";
+        row.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return Ok(hours);
+    }
+
+    public record BlockRange(DateOnly From, DateOnly To, TimeOnly Start, TimeOnly End, string? Notes);
+
+    [HttpPost("blocks"), Authorize(Roles = AppRoles.Owner)]
+    public async Task<IActionResult> BlockDates(BlockRange request, CancellationToken ct)
+    {
+        if (request.To < request.From || request.To.DayNumber - request.From.DayNumber > 366 || request.End <= request.Start || request.Notes?.Length > 300)
+            return BadRequest(new { message = "Choose a date range up to one year and an end time after the start time." });
+        for (var date = request.From; date <= request.To; date = date.AddDays(1))
+            db.Availability.Add(new AvailabilityRule { SpecificDate = date, StartTime = request.Start,
+                EndTime = request.End, IsAvailable = false, Notes = request.Notes?.Trim() ?? "" });
+        await db.SaveChangesAsync(ct);
+        return Ok(new { message = "Time blocked. Existing bookings remain on the schedule." });
+    }
     [HttpGet("slots")]
     public async Task<ActionResult<IReadOnlyList<AvailableSlotDto>>> Slots(
         DateOnly from, DateOnly to, int serviceId, CancellationToken cancellationToken) =>

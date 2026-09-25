@@ -101,7 +101,7 @@ public class AvailabilityServiceTests
     }
 
     [Fact]
-    public async Task RegularServiceSlots_RunFromSixAmAndFinishByElevenPm()
+    public async Task RegularServiceSlots_RunFromSevenAmAndFinishByElevenPm()
     {
         await using var db = CreateDatabase();
         var date = DateOnly.FromDateTime(DateTime.Today.AddDays(5));
@@ -117,10 +117,11 @@ public class AvailabilityServiceTests
         var slots = await availability.GetSlotsAsync(date, date, service.Id, CancellationToken.None);
         var schedule = await availability.GetDayScheduleAsync(date, service.Id, CancellationToken.None);
 
-        Assert.Equal(new TimeOnly(6, 0), slots.First().StartTime);
+        Assert.Equal(new TimeOnly(7, 0), slots.First().StartTime);
         Assert.Equal(new TimeOnly(22, 30), slots.Last().StartTime);
         Assert.False(schedule.Single(item => item.StartTime == new TimeOnly(5, 30)).IsBookable);
-        Assert.True(schedule.Single(item => item.StartTime == new TimeOnly(6, 0)).IsBookable);
+        Assert.False(schedule.Single(item => item.StartTime == new TimeOnly(6, 0)).IsBookable);
+        Assert.True(schedule.Single(item => item.StartTime == new TimeOnly(7, 0)).IsBookable);
         Assert.True(schedule.Single(item => item.StartTime == new TimeOnly(22, 30)).IsBookable);
         Assert.False(schedule.Single(item => item.StartTime == new TimeOnly(23, 0)).IsBookable);
     }
