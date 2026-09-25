@@ -10,7 +10,7 @@ initializeBookingDeclineDialog();
 document.querySelector('#refresh-owner').addEventListener('click',loadOwner);
 function initializeOwnerPanels(){
   document.querySelectorAll('[data-owner-panel]').forEach(button=>button.addEventListener('click',()=>showOwnerPanel(button.dataset.ownerPanel)));
-  document.querySelectorAll('[data-open-owner-panel]').forEach(button=>button.addEventListener('click',()=>showOwnerPanel(button.dataset.openOwnerPanel)));
+  document.querySelectorAll('[data-open-owner-panel]').forEach(button=>button.addEventListener('click',()=>button.dataset.ownerFocus==='future'?openFutureBookings():showOwnerPanel(button.dataset.openOwnerPanel)));
   const aliases={'owner-messages':'requests','owner-bookings':'schedule','owner-overnight':'overnight','owner-customers':'customers'};
   const requested=location.hash.replace('#','');
   showOwnerPanel(document.querySelector(`[data-owner-panel-name="${aliases[requested]||requested}"]`)?(aliases[requested]||requested):'overview',false);
@@ -20,6 +20,15 @@ function showOwnerPanel(name,updateHash=true){
   document.querySelectorAll('[data-owner-panel]').forEach(button=>button.classList.toggle('active',button.dataset.ownerPanel===name));
   if(updateHash)history.replaceState(null,'',`#${name}`);
   window.scrollTo({top:0,behavior:'smooth'});
+}
+function openFutureBookings(){
+  const today=formatIso(new Date());
+  const future=ownerBookings.filter(item=>item.status==='Confirmed'&&(item.endDate||item.date)>=today).sort((a,b)=>a.date.localeCompare(b.date)||a.startTime.localeCompare(b.startTime));
+  showOwnerPanel('schedule');
+  if(!future.length)return;
+  ownerCalendarDate=new Date(`${future[0].date}T00:00:00`);
+  setOwnerCalendarView('month');
+  document.querySelector('#owner-calendar-grid').scrollIntoView({behavior:'smooth',block:'center'});
 }
 async function loadOwner(){try{await Promise.all([loadServices(),loadRules(),loadCustomers()]);await applyOwnerBookingSelection();await loadBookings();renderOwnerCalendar();renderOvernightCalendar();}catch(error){feedback(error.message,'error');}}
 async function loadRequests(){
@@ -170,7 +179,7 @@ function setOwnerCalendarView(view){ownerCalendarView=view;document.querySelecto
 function navigateOwnerCalendar(direction){if(ownerCalendarView==='month')ownerCalendarDate=new Date(ownerCalendarDate.getFullYear(),ownerCalendarDate.getMonth()+direction,1);else ownerCalendarDate=new Date(ownerCalendarDate.getFullYear(),ownerCalendarDate.getMonth(),ownerCalendarDate.getDate()+(7*direction));renderOwnerCalendar();}
 function serviceColorClass(serviceId){const index=ownerServices.findIndex(service=>service.id===serviceId);return `booking-color-${(index<0?Number(serviceId):index)%6}`;}
 function bookingWindows(item){if(!item.isOvernightStay||!item.endDate)return[{date:item.date,start:item.startTime,end:item.endTime,label:''}];const windows=[];let date=new Date(`${item.date}T00:00:00`);const end=new Date(`${item.endDate}T00:00:00`);while(date<end){windows.push({date:formatIso(date),start:'00:00',end:'23:59',label:'Overnight'});date.setDate(date.getDate()+1);}return windows;}
-function activeDayBookings(){return ownerBookings.filter(item=>!item.isOvernightStay&&item.status==='Confirmed');}
+function activeDayBookings(){return ownerBookings.filter(item=>item.status==='Confirmed');}
 function rulesForDate(date){const parsed=new Date(`${date}T00:00:00`);return rules.filter(rule=>rule.specificDate===date||(rule.dayOfWeek!==null&&rule.dayOfWeek!==undefined&&Number(rule.dayOfWeek)===parsed.getDay()));}
 function renderOwnerCalendar(){
   const calendar=document.querySelector('#owner-calendar-grid');
@@ -213,7 +222,7 @@ function renderOwnerWeek(calendar){
     const blockButton=document.createElement('button');blockButton.type='button';blockButton.className='week-day-action';blockButton.textContent='Block this date/time';blockButton.addEventListener('click',()=>prepareBlockDate(date));column.append(blockButton);calendar.append(column);
   }
 }
-function ownerCalendarEvent(item,window,detailed=false){const event=document.createElement('div');event.className=`owner-calendar-event ${serviceColorClass(item.serviceId)}`;event.textContent=detailed?`${formatTime(window.start)}–${formatTime(window.end)} · ${item.dogName} · ${item.serviceName}`:`${formatTime(window.start)} · ${item.dogName}`;event.title=`${item.serviceName} · ${item.customerName} · ${item.status}`;return event;}
+function ownerCalendarEvent(item,window,detailed=false){const event=document.createElement('div');event.className=`owner-calendar-event ${serviceColorClass(item.serviceId)}`;const time=window.label||`${formatTime(window.start)}–${formatTime(window.end)}`;event.textContent=detailed?`${time} · ${item.dogName} · ${item.serviceName}`:`${window.label||formatTime(window.start)} · ${item.dogName}`;event.title=`${item.serviceName} · ${item.customerName} · ${item.status}`;return event;}
 function renderOwnerLegend(legend){const visible=new Map();activeDayBookings().forEach(item=>visible.set(item.serviceId,item.serviceName));legend.replaceChildren();visible.forEach((name,id)=>{const entry=document.createElement('span');entry.className=`legend-item ${serviceColorClass(id)}`;const dot=document.createElement('span');dot.className='legend-dot';entry.append(dot,document.createTextNode(name));legend.append(entry);});const blocked=document.createElement('span');blocked.className='legend-item';const blockedDot=document.createElement('span');blockedDot.className='legend-dot blocked-dot';blocked.append(blockedDot,document.createTextNode('Unavailable'));legend.append(blocked);}
 function appendWeekdayLabels(calendar){['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(day=>{const label=document.createElement('div');label.className='calendar-weekday';label.textContent=day;calendar.append(label);});}
 function startOfWeek(value){const date=new Date(value.getFullYear(),value.getMonth(),value.getDate());date.setDate(date.getDate()-date.getDay());return date;}
