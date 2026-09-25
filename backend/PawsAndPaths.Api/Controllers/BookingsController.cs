@@ -49,6 +49,7 @@ public class BookingsController(
                 complete.User.FullName,
                 complete.User.Email ?? string.Empty,
                 complete.User.PhoneNumber ?? string.Empty,
+                complete.User.ServiceAddress,
                 complete.Dog.Name,
                 complete.ServiceOffering.Name,
                 complete.Date,

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PawsAndPaths.Api.Data;
@@ -11,7 +12,11 @@ namespace PawsAndPaths.Api.Controllers;
 
 [ApiController, Authorize]
 [Route("api/dogs")]
-public class DogsController(AppDbContext db) : ControllerBase
+public class DogsController(
+    AppDbContext db,
+    UserManager<AppUser> userManager,
+    IOwnerNotificationEmailSender notificationSender,
+    ILogger<DogsController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<DogDto>>> GetMine(CancellationToken cancellationToken)
@@ -22,12 +27,31 @@ public class DogsController(AppDbContext db) : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<DogDto>> Create(DogWriteDto request, CancellationToken cancellationToken)
+    public async Task<ActionResult<DogDto>> Create(CreateDogDto request, CancellationToken cancellationToken)
     {
-        var dog = new Dog { UserId = User.FindFirstValue(ClaimTypes.NameIdentifier)!, Name = request.Name.Trim() };
-        Apply(dog, request);
+        var user = await userManager.GetUserAsync(User);
+        if (user is null) return Unauthorized();
+        if (!await userManager.HasPasswordAsync(user))
+            return Conflict(new { message = "Set an account password in Security before registering a dog." });
+        if (!await userManager.CheckPasswordAsync(user, request.Password))
+            return Unauthorized(new { message = "The account password is incorrect." });
+
+        var dog = new Dog { UserId = user.Id, Name = request.Name.Trim() };
+        Apply(dog, new DogWriteDto(request.Name, request.Breed, request.Age,
+            request.CareInstructions, request.BehavioralNotes, request.MedicalNotes));
         db.Dogs.Add(dog);
         await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await notificationSender.SendDogRegistrationAsync(new DogRegistrationNotification(
+                user.FullName, user.Email ?? string.Empty, user.PhoneNumber ?? string.Empty,
+                user.ServiceAddress, dog.Name, dog.Breed, dog.Age,
+                dog.CareInstructions, dog.BehavioralNotes, dog.MedicalNotes), cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Owner email notification failed for dog {DogId}.", dog.Id);
+        }
         return CreatedAtAction(nameof(GetById), new { id = dog.Id }, dog.ToDto());
     }
 

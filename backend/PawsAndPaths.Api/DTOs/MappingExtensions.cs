@@ -18,7 +18,8 @@ public static class MappingExtensions
 
     public static BookingDto ToDto(this Booking booking) => new(
         booking.Id, booking.User.FullName, booking.User.Email ?? string.Empty,
-        booking.User.PhoneNumber ?? string.Empty, booking.DogId, booking.Dog.Name, booking.ServiceOfferingId,
+        booking.User.PhoneNumber ?? string.Empty, booking.User.ServiceAddress,
+        booking.DogId, booking.Dog.Name, booking.ServiceOfferingId,
         booking.ServiceOffering.Name, booking.Date, booking.StartTime,
         booking.EndTime, booking.Price, booking.SpecialInstructions,
         booking.Status, booking.CreatedAt, booking.EndDate, booking.IsOvernightStay,
