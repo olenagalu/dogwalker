@@ -109,16 +109,20 @@ async function submitBookingDecline(event){
 async function loadBookings(){
   ownerBookings=await PrincessApi.request('/api/bookings/admin');
   const confirmed=ownerBookings.filter(item=>item.status==='Confirmed').sort((a,b)=>a.date.localeCompare(b.date)||a.startTime.localeCompare(b.startTime));
+  const today=formatIso(new Date());
+  const future=confirmed.filter(item=>(item.endDate||item.date)>=today);
   const history=ownerBookings.filter(item=>item.status==='Completed'||item.status==='Declined').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const completed=history.filter(item=>item.status==='Completed');
   const list=document.querySelector('#owner-booking-list');list.replaceChildren();
   if(!confirmed.length)list.append(empty('No confirmed bookings are on the schedule.'));
   confirmed.forEach(item=>list.append(ownerBookingCard(item,true)));
   const historyList=document.querySelector('#owner-booking-history');historyList.replaceChildren();
   if(!history.length)historyList.append(empty('No completed or declined bookings yet.'));
   history.forEach(item=>historyList.append(ownerBookingCard(item,false)));
-  document.querySelector('#owner-overview-schedule-count').textContent=confirmed.length;
+  document.querySelector('#owner-overview-future-count').textContent=future.length;
+  document.querySelector('#owner-overview-completed-count').textContent=completed.length;
   document.querySelector('#owner-overview-history-count').textContent=history.length;
-  document.querySelector('#owner-completed-count').textContent=history.filter(item=>item.status==='Completed').length;
+  document.querySelector('#owner-completed-count').textContent=completed.length;
   document.querySelector('#owner-declined-count').textContent=history.filter(item=>item.status==='Declined').length;
   await loadRequests();renderOwnerCalendar();renderOvernightCalendar();
 }
