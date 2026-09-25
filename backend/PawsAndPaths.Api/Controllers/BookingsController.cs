@@ -51,6 +51,7 @@ public class BookingsController(
                 complete.User.PhoneNumber ?? string.Empty,
                 complete.User.ServiceAddress,
                 complete.Dog.Name,
+                complete.Dog.Breed,
                 complete.ServiceOffering.Name,
                 complete.Date,
                 complete.EndDate,

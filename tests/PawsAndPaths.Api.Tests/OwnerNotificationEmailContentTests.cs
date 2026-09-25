@@ -52,7 +52,7 @@ public class OwnerNotificationEmailContentTests
     {
         var message = OwnerNotificationEmailContent.CreateBookingRequest(
             new BookingNotification(
-                "Sam Taylor", "customer@example.com", "561-555-0100", "123 Main St", "Buddy", "Overnight stay",
+                "Sam Taylor", "customer@example.com", "561-555-0100", "123 Main St", "Buddy", "Labrador", "Overnight stay",
                 new DateOnly(2026, 10, 2), new DateOnly(2026, 10, 4),
                 new TimeOnly(22, 0), new TimeOnly(9, 0), 95m, "Needs medication"),
             "kadulinaiulia@gmail.com", "sender@example.com", "Princess Dog Walker",
@@ -62,6 +62,7 @@ public class OwnerNotificationEmailContentTests
         Assert.Equal("customer@example.com", message.ReplyTo.Mailboxes.Single().Address);
         Assert.Contains("Overnight stay", message.Subject);
         Assert.Contains("Buddy", message.TextBody);
+        Assert.Contains("Labrador", message.TextBody);
         Assert.Contains("123 Main St", message.TextBody);
         Assert.Contains("October 2, 2026 through October 4, 2026", message.TextBody);
         Assert.Contains("Needs medication", message.TextBody);

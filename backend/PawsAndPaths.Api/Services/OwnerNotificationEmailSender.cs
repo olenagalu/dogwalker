@@ -21,6 +21,7 @@ public record BookingNotification(
     string CustomerPhone,
     string ServiceAddress,
     string DogName,
+    string DogBreed,
     string ServiceName,
     DateOnly Date,
     DateOnly? EndDate,
@@ -188,6 +189,9 @@ public static class OwnerNotificationEmailContent
         var notes = string.IsNullOrWhiteSpace(notification.SpecialInstructions)
             ? "None provided"
             : notification.SpecialInstructions;
+        var breed = string.IsNullOrWhiteSpace(notification.DogBreed)
+            ? "Not provided"
+            : notification.DogBreed;
         var safe = new
         {
             Customer = WebUtility.HtmlEncode(notification.CustomerName),
@@ -195,6 +199,7 @@ public static class OwnerNotificationEmailContent
             Phone = WebUtility.HtmlEncode(notification.CustomerPhone),
             Address = WebUtility.HtmlEncode(notification.ServiceAddress),
             Dog = WebUtility.HtmlEncode(notification.DogName),
+            Breed = WebUtility.HtmlEncode(breed),
             Service = WebUtility.HtmlEncode(notification.ServiceName),
             Date = WebUtility.HtmlEncode(dateText),
             Time = WebUtility.HtmlEncode(timeText),
@@ -210,7 +215,7 @@ public static class OwnerNotificationEmailContent
             : $"<p><a href=\"{WebUtility.HtmlEncode(ownerDashboardUrl)}\">Open the owner dashboard to approve or decline</a></p>";
         message.Body = new BodyBuilder
         {
-            TextBody = $"New booking request\n\nCustomer: {notification.CustomerName}\nEmail: {notification.CustomerEmail}\nPhone: {notification.CustomerPhone}\nService address: {notification.ServiceAddress}\nDog: {notification.DogName}\nService: {notification.ServiceName}\nDate: {dateText}\nTime: {timeText}\nPrice: {notification.Price:C}\nStatus: Pending\nSpecial instructions: {notes}{dashboardText}",
+            TextBody = $"New booking request\n\nCustomer: {notification.CustomerName}\nEmail: {notification.CustomerEmail}\nPhone: {notification.CustomerPhone}\nService address: {notification.ServiceAddress}\nDog: {notification.DogName}\nBreed: {breed}\nService: {notification.ServiceName}\nDate: {dateText}\nTime: {timeText}\nPrice: {notification.Price:C}\nStatus: Pending\nSpecial instructions: {notes}{dashboardText}",
             HtmlBody = $$"""
                 <h1>New booking request</h1>
                 <p><strong>Customer:</strong> {{safe.Customer}}<br>
@@ -218,6 +223,7 @@ public static class OwnerNotificationEmailContent
                 <strong>Phone:</strong> {{safe.Phone}}<br>
                 <strong>Service address:</strong> {{safe.Address}}</p>
                 <p><strong>Dog:</strong> {{safe.Dog}}<br>
+                <strong>Breed:</strong> {{safe.Breed}}<br>
                 <strong>Service:</strong> {{safe.Service}}<br>
                 <strong>Date:</strong> {{safe.Date}}<br>
                 <strong>Time:</strong> {{safe.Time}}<br>
