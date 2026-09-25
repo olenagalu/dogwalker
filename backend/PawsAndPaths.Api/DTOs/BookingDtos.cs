@@ -48,7 +48,7 @@ public enum DeclineEmailOption
 
 public record BookingDto(
     int Id, string CustomerName, string CustomerEmail, string CustomerPhone, string CustomerServiceAddress,
-    int DogId, string DogName,
+    int DogId, string DogName, string DogBreed,
     int ServiceId, string ServiceName, DateOnly Date, TimeOnly StartTime, TimeOnly EndTime,
     decimal Price, string SpecialInstructions, BookingStatus Status, DateTimeOffset CreatedAt,
     DateOnly? EndDate, bool IsOvernightStay, TimeOnly? OvernightStartTime,
